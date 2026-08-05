@@ -1,6 +1,6 @@
 package net.nostalgia.client.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import java.util.Random;
@@ -8,7 +8,7 @@ import java.util.Random;
 public final class CrtMonitorRenderer {
 
     public static void render(
-            GuiGraphicsExtractor graphics,
+            GuiGraphics graphics,
             int x, int y,
             float gameTime,
             boolean isOverloading,
@@ -37,27 +37,21 @@ public final class CrtMonitorRenderer {
 
         graphics.fill(borderL, borderT, borderR - 1, borderT + 1, TimeMachineLayout.GOLD_LIGHT);
         graphics.fill(borderR - 1, borderT, borderR, borderT + 1, TimeMachineLayout.GOLD_SHADOW);
-
         graphics.fill(borderL, borderT + 1, borderL + 1, borderT + 2, TimeMachineLayout.GOLD_LIGHT);
         graphics.fill(borderL + 1, borderT + 1, borderR - 1, borderT + 2, TimeMachineLayout.GOLD_PRIMARY);
         graphics.fill(borderR - 1, borderT + 1, borderR, borderT + 2, TimeMachineLayout.GOLD_SHADOW);
-
         graphics.fill(borderL, borderT + 2, borderL + 1, borderB - 2, TimeMachineLayout.GOLD_LIGHT);
         graphics.fill(borderL + 1, borderT + 2, borderL + 2, borderB - 2, TimeMachineLayout.GOLD_BORDER_L);
         graphics.fill(borderR - 2, borderT + 2, borderR - 1, borderB - 2, TimeMachineLayout.GOLD_BORDER_R);
         graphics.fill(borderR - 1, borderT + 2, borderR, borderB - 2, TimeMachineLayout.GOLD_SHADOW);
-
         graphics.fill(borderL, borderB - 2, borderL + 1, borderB - 1, TimeMachineLayout.GOLD_LIGHT);
         graphics.fill(borderL + 1, borderB - 2, borderR - 1, borderB - 1, TimeMachineLayout.GOLD_SECONDARY);
         graphics.fill(borderR - 1, borderB - 2, borderR, borderB - 1, TimeMachineLayout.GOLD_SHADOW);
-
         graphics.fill(borderL, borderB - 1, borderR, borderB, TimeMachineLayout.GOLD_SHADOW);
 
         graphics.enableScissor(vX, vY, vX + TimeMachineLayout.MONITOR_W, vY + TimeMachineLayout.MONITOR_H);
         float panX = (float) Math.sin(gameTime / 4000.0f) * 10.0f;
-
         graphics.blit(RenderPipelines.GUI_TEXTURED, currentIcon, (int) (ovX - 10 + panX), ovY - 12, 0.0F, 0.0F, 180, 90, 180, 90);
-
         int scrollY = isOverloading ? (int) ((gameTime / 5.0f) % 4) : (int) ((gameTime / 20.0f) % 4);
         graphics.blit(RenderPipelines.GUI_TEXTURED, TimeMachineLayout.CRT_SCANLINES, ovX, ovY, 0.0F, scrollY, TimeMachineLayout.MONITOR_W, TimeMachineLayout.MONITOR_H, 4, 4);
 
