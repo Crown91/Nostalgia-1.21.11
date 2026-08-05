@@ -31,7 +31,8 @@
     "minecraft": "~1.21.11",
     "java": ">=22",
     "fabric-api": "*",
-    "sha": "*"
+    "sha": "*",
+    "zemlya": "*"
   },
   "suggests": {
     "sodium": "*"
