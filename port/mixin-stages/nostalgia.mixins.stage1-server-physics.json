@@ -1,0 +1,48 @@
+{
+  "required": true,
+  "plugin": "net.nostalgia.mixin.MixinPlugin",
+  "package": "net.nostalgia.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityGravityAnomalyMixin",
+    "AlphaSoundMixin",
+    "server.HologramBlockBreakMixin",
+    "server.HologramBlockPlaceMixin",
+    "server.GlobalBlockChangeMixin",
+    "server.BlockCollisionsNostalgiaMixin",
+    "server.AlphaChunkLoadMixin",
+    "server.LegacyWeatherMixin",
+    "physics.LegacyPhysicsCombatMixin",
+    "physics.LegacyPhysicsFoodPropertiesMixin",
+    "physics.LegacyPhysicsPlayerMixin",
+    "physics.LegacyPhysicsExperienceMixin",
+    "physics.LegacyPhysicsOffhandMixin",
+    "physics.LegacyPhysicsMobAIMixin",
+    "physics.AlphaConsumableMixin",
+    "physics.LegacyPhysicsBoatMixin",
+    "physics.LegacyPhysicsChestMixin",
+    "physics.LegacyPhysicsChestEntityMixin",
+    "physics.LegacyPhysicsChestSoundMixin",
+    "physics.LegacyPhysicsDoorSoundMixin",
+    "physics.LegacyPhysicsFireMixin",
+    "physics.LegacyPhysicsTntMixin",
+    "physics.LegacyPhysicsFarmlandMixin",
+    "physics.LegacyPhysicsCropMixin",
+    "physics.AlphaBlockEntityTypeMixin",
+    "physics.LegacyPhysicsPanicGoalMixin",
+    "inventory.CraftingMenuMixin",
+    "AlphaEntityStateMixin",
+    "AlphaBabyMobMixin",
+    "item.AmethystItemMixin"
+  ],
+  "client": [
+    "physics.AlphaChestRendererMixin",
+    "physics.LegacyPhysicsGameModeMixin",
+    "physics.AbstractContainerScreenAccessor",
+    "physics.SlotAccessor",
+    "WorldOpenFlowsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

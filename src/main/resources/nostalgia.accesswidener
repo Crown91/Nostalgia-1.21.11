@@ -1,0 +1,7 @@
+accessWidener	v2	named
+
+# NOTE: this file was missing from the archive you sent, but both build.gradle
+# (accessWidenerPath) and fabric.mod.json (accessWidener) reference it, so Loom
+# would fail without it. Re-add your original entries here.
+# On 1.21.11 (obfuscated) access wideners are actually needed again, unlike on
+# unobfuscated 26.1.x, so expect to add entries as compile errors appear.

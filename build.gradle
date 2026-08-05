@@ -1,0 +1,149 @@
+plugins {
+	id 'fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenLocal()
+	mavenCentral()
+	maven { url 'https://maven.wispforest.io/releases' }
+	maven { url 'https://jitpack.io/' }
+	maven {
+		name = 'Modrinth'
+		url = 'https://api.modrinth.com/maven'
+		content { includeGroup 'maven.modrinth' }
+	}
+}
+
+loom {
+	accessWidenerPath = file("src/main/resources/nostalgia.accesswidener")
+
+	mods {
+		"nostalgia" {
+			sourceSet sourceSets.main
+		}
+	}
+
+	runs {
+		datagen {
+			server()
+			name "Data Generation"
+			vmArg "-Dfabric-api.datagen"
+			vmArg "-Dfabric-api.datagen.output-dir=${file("src/main/generated")}"
+			vmArg "-Dfabric-api.datagen.modid=nostalgia"
+			// was hardcoded to 26.1.1
+			vmArg "-Dfabric.addGameVersion=${project.minecraft_version}"
+			ideConfigGenerated = true
+			runDir "build/datagen"
+		}
+	}
+}
+
+sourceSets {
+	main {
+		resources {
+			srcDirs += [
+					'src/main/generated'
+			]
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	// 1.21.11 IS obfuscated, so mappings are required (26.1.x did not need them).
+	// Sources use Mojang (Mojmap) names, so use official Mojang mappings.
+	mappings loom.officialMojangMappings()
+
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	// Sodium from Modrinth instead of a hardcoded local Windows path.
+	modCompileOnly "maven.modrinth:sodium:${project.sodium_version}"
+
+	// SHA (Sodium Hologram API): build the ported SHA-1.21.11 project and copy its
+	// jar into ./libs/. Guarded so the build still configures when it is absent.
+	def shaJar = file(project.sha_jar)
+	if (shaJar.exists()) {
+		modImplementation files(shaJar)
+	} else {
+		logger.warn("SHA jar not found at ${shaJar} - build SHA-1.21.11 first and copy the jar there.")
+	}
+
+	// Optional local-only dependencies from the original build. They pointed at
+	// paths that do not exist in this checkout, so they are now opt-in.
+	def punchy = file("libs/punchy.jar")
+	if (punchy.exists()) {
+		modCompileOnly files(punchy)
+	}
+	def zemlyaMain = file("../Zemlya/build/classes/java/main")
+	def zemlyaClient = file("../Zemlya/build/classes/java/client")
+	if (zemlyaMain.exists()) {
+		compileOnly files(zemlyaMain)
+	}
+	if (zemlyaClient.exists()) {
+		compileOnly files(zemlyaClient)
+	}
+}
+
+processResources {
+	inputs.property "version", project.version
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+
+	exclude "**/* *.ogg"
+}
+
+tasks.withType(JavaCompile).configureEach {
+	// 1.21.11 targets Java 21, not 25.
+	it.options.release = 22
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_22
+	targetCompatibility = JavaVersion.VERSION_22
+}
+
+tasks.withType(Jar).configureEach {
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}" }
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+	repositories {
+	}
+}
+
+// The old 'deploy' task copied jars into hardcoded PrismLauncher paths and was
+// wired into 'build'. Now it is opt-in: ./gradlew build deploy -PmodsDir=...
+tasks.register('deploy', Copy) {
+	onlyIf { project.hasProperty('modsDir') }
+	from(layout.buildDirectory.dir("libs"))
+	include("*.jar")
+	exclude("*-sources.jar", "*-dev.jar", "*-sources-dev.jar")
+	into(project.findProperty('modsDir') ?: layout.buildDirectory.dir("deploy"))
+}
