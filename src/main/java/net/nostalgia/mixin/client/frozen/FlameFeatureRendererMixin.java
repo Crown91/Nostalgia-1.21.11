@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Quaternionf;
-import net.minecraft.client.resources.model.sprite.AtlasManager;
+import net.minecraft.client.resources.model.AtlasManager;
 
 @Mixin(FlameFeatureRenderer.class)
 public class FlameFeatureRendererMixin {
@@ -47,13 +47,10 @@ public class FlameFeatureRendererMixin {
         EntityRenderState state = nostalgia$currentState.get();
         if (state == null) return sprite;
         if (!FrozenSpriteRegistry.hasAnyMappings()) return sprite;
-        
         TickRateManagerAccess access = ClientFreezeRegions.access();
         if (access == null || !access.nostalgia$hasRegions()) return sprite;
-        
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return sprite;
-        
         long chunkKey = ChunkPos.pack((int) Math.floor(state.x) >> 4, (int) Math.floor(state.z) >> 4);
         if (access.nostalgia$isChunkFrozen(level.dimension(), chunkKey)) {
             TextureAtlasSprite frozen = FrozenSpriteRegistry.getFrozenFor(sprite);
