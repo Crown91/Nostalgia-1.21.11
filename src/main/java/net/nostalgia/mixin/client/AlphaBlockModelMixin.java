@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class AlphaBlockModelMixin {
 
     @Inject(method = "get", at = @At("HEAD"), cancellable = true)
-    private void nostalgia$swapAlphaModels(BlockState state, CallbackInfoReturnable<net.minecraft.client.renderer.block.dispatch.BlockStateModel> cir) {
+    private void nostalgia$swapAlphaModels(BlockState state, CallbackInfoReturnable<net.minecraft.client.renderer.block.model.BlockStateModel> cir) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc != null && mc.level != null && mc.level.dimension() == net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY) {
             if (state.is(Blocks.DANDELION)) {

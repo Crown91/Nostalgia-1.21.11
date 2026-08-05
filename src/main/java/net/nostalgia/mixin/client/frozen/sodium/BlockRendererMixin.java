@@ -4,7 +4,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRend
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
@@ -39,11 +39,7 @@ public abstract class BlockRendererMixin {
         this.nostalgia$inZone = access.nostalgia$isChunkFrozen(level.dimension(), chunkKey);
     }
 
-    @ModifyVariable(
-            method = "bufferQuad",
-            at = @At(value = "STORE"),
-            ordinal = 0
-    )
+    @ModifyVariable(method = "bufferQuad", at = @At(value = "STORE"), ordinal = 0)
     private TextureAtlasSprite nostalgia$swapAndRemap(TextureAtlasSprite sprite) {
         if (!this.nostalgia$inZone || sprite == null) return sprite;
         TextureAtlasSprite frozen = FrozenSpriteRegistry.getFrozenFor(sprite);

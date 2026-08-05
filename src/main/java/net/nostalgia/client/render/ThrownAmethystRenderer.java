@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.ThrownItemRenderState;
 import net.minecraft.client.renderer.item.ItemModelResolver;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.nostalgia.entity.ThrownAmethystEntity;
@@ -36,16 +36,10 @@ public class ThrownAmethystRenderer extends EntityRenderer<ThrownAmethystEntity,
     @Override
     public void submit(AmethystRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
         poseStack.pushPose();
-        
-        // Вращаем аметист как стрелу (по направлению полета)
         poseStack.mulPose(Axis.YP.rotationDegrees(state.yRot - 90.0F));
         poseStack.mulPose(Axis.ZP.rotationDegrees(state.xRot));
-        
-        // Немного сдвинем, чтобы центр вращения был правильным, и масштабируем если надо
         poseStack.translate(0.0F, -0.1F, 0.0F);
-
         state.item.submit(poseStack, submitNodeCollector, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor);
-        
         poseStack.popPose();
         super.submit(state, poseStack, submitNodeCollector, camera);
     }

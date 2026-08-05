@@ -1,6 +1,6 @@
 package net.nostalgia.datagen;
 
-import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricLanguageProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -8,60 +8,52 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.nostalgia.block.AlphaBlocks;
 import net.nostalgia.item.AlphaItems;
-
 import java.util.concurrent.CompletableFuture;
 
 public class NostalgiaLanguageProvider extends FabricLanguageProvider {
-    
-    protected NostalgiaLanguageProvider(FabricPackOutput dataOutput, CompletableFuture<HolderLookup.Provider> registryLookup) {
+
+    protected NostalgiaLanguageProvider(FabricDataOutput dataOutput, CompletableFuture<HolderLookup.Provider> registryLookup) {
         super(dataOutput, "en_us", registryLookup);
     }
 
     @Override
     public void generateTranslations(HolderLookup.Provider registryLookup, TranslationBuilder translationBuilder) {
-        
         try {
             for (java.lang.reflect.Field field : AlphaItems.class.getDeclaredFields()) {
                 if (Item.class.isAssignableFrom(field.getType())) {
                     Item item = (Item) field.get(null);
                     String name = BuiltInRegistries.ITEM.getKey(item).getPath();
-                    if(name.equals("air")) continue;
+                    if (name.equals("air")) continue;
                     String formattedName = formatName(name.replace("alpha_", ""));
                     translationBuilder.add(item, formattedName);
                 }
             }
         } catch (Exception e) {}
-
-        
         try {
             for (java.lang.reflect.Field field : AlphaBlocks.class.getDeclaredFields()) {
                 if (Block.class.isAssignableFrom(field.getType())) {
                     Block block = (Block) field.get(null);
                     String name = BuiltInRegistries.BLOCK.getKey(block).getPath();
-                    if(name.equals("air")) continue;
+                    if (name.equals("air")) continue;
                     String formattedName = formatName(name.replace("alpha_", ""));
                     translationBuilder.add(block, formattedName);
                     translationBuilder.add("item.nostalgia." + name, formattedName);
                 }
             }
         } catch (Exception e) {}
-
         translationBuilder.add("itemGroup.nostalgia.alpha_tab", "Alpha Blocks");
         translationBuilder.add("itemGroup.nostalgia.alpha_items", "Alpha Items");
-
         translationBuilder.add("gui.nostalgia.time_machine.launch", "START");
         translationBuilder.add("gui.nostalgia.time_machine.launch_tooltip", "INITIALIZE");
         translationBuilder.add("gui.nostalgia.time_machine.charge", "CHARGE");
-
         translationBuilder.add("gui.nostalgia.warning.title", "ALPHA PROTOCOL");
         translationBuilder.add("gui.nostalgia.warning.text", "THIS MOD CONTAINS FLASHING LIGHTS! PEOPLE WITH PHOTOSENSITIVE EPILEPSY SHOULD NOT PLAY!");
         translationBuilder.add("gui.nostalgia.warning.continue", "CONTINUE");
-
         translationBuilder.add("item.nostalgia.charged_amethyst", "Charged Amethyst");
-        translationBuilder.add("item.nostalgia.charged_amethyst.up", "§bCharged Amethyst ᛏ");
-        translationBuilder.add("item.nostalgia.charged_amethyst.down", "§5Charged Amethyst ᛦ");
-        translationBuilder.add("item.nostalgia.charged_amethyst.left", "§aCharged Amethyst ᚲ");
-        translationBuilder.add("item.nostalgia.charged_amethyst.right", "§6Charged Amethyst ᚦ");
+        translationBuilder.add("item.nostalgia.charged_amethyst.up", "\u00a7bCharged Amethyst \u16cf");
+        translationBuilder.add("item.nostalgia.charged_amethyst.down", "\u00a75Charged Amethyst \u16e6");
+        translationBuilder.add("item.nostalgia.charged_amethyst.left", "\u00a7aCharged Amethyst \u16b2");
+        translationBuilder.add("item.nostalgia.charged_amethyst.right", "\u00a76Charged Amethyst \u16a6");
     }
 
     private String formatName(String input) {

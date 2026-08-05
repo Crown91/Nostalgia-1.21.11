@@ -2,7 +2,7 @@ package net.nostalgia.mixin.client.frozen;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.particle.SingleQuadParticle;
-import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
+import net.minecraft.client.renderer.state.QuadParticleRenderState;
 import net.minecraft.world.level.ChunkPos;
 import net.nostalgia.alphalogic.ritual.TickRateManagerAccess;
 import net.nostalgia.client.events.core.ClientFreezeRegions;
