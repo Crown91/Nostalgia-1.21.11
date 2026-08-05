@@ -2,7 +2,7 @@ package net.nostalgia.mixin.client.frozen.sodium;
 
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -34,42 +34,22 @@ public abstract class HologramBlockRendererMixin {
         }
     }
 
-    @Inject(
-            method = "bufferQuad",
-            at = @At(value = "INVOKE", target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/terrain/material/Material;bits()I")
-    )
+    @Inject(method = "bufferQuad", at = @At(value = "INVOKE", target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/terrain/material/Material;bits()I"))
     private void nostalgia$invertGeometry(net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl quad, float[] brightnesses, net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material material, CallbackInfo ci) {
         if (!this.nostalgia$isInvertedHologram) return;
-
         float blockCenterY = this.nostalgia$blockYOrigin + 0.5f;
-
         for (int i = 0; i < 4; i++) {
-            ChunkVertexEncoder.Vertex v = this.vertices[i];
-            
-            v.y = 2.0f * blockCenterY - v.y;
+            this.vertices[i].y = 2.0f * blockCenterY - this.vertices[i].y;
         }
-
-        ChunkVertexEncoder.Vertex temp0 = this.vertices[0];
-        this.vertices[0] = this.vertices[1];
-        this.vertices[1] = temp0;
-
-        ChunkVertexEncoder.Vertex temp2 = this.vertices[2];
-        this.vertices[2] = this.vertices[3];
-        this.vertices[3] = temp2;
+        ChunkVertexEncoder.Vertex temp0 = this.vertices[0]; this.vertices[0] = this.vertices[1]; this.vertices[1] = temp0;
+        ChunkVertexEncoder.Vertex temp2 = this.vertices[2]; this.vertices[2] = this.vertices[3]; this.vertices[3] = temp2;
     }
 
-    @ModifyVariable(
-            method = "bufferQuad",
-            at = @At(value = "STORE", ordinal = 0),
-            ordinal = 0
-    )
+    @ModifyVariable(method = "bufferQuad", at = @At(value = "STORE", ordinal = 0), ordinal = 0)
     private net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing nostalgia$swapFace(net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing normalFace) {
         if (!this.nostalgia$isInvertedHologram || normalFace == null) return normalFace;
-        if (normalFace == net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.POS_Y) {
-            return net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.NEG_Y;
-        } else if (normalFace == net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.NEG_Y) {
-            return net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.POS_Y;
-        }
+        if (normalFace == net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.POS_Y) return net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.NEG_Y;
+        if (normalFace == net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.NEG_Y) return net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing.POS_Y;
         return normalFace;
     }
 }

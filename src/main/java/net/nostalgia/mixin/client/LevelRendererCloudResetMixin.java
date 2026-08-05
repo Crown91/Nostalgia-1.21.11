@@ -30,7 +30,7 @@ public abstract class LevelRendererCloudResetMixin {
             com.mojang.blaze3d.resource.GraphicsResourceAllocator resourceAllocator,
             net.minecraft.client.DeltaTracker deltaTracker,
             boolean renderOutline,
-            net.minecraft.client.renderer.state.level.CameraRenderState cameraState,
+            net.minecraft.client.renderer.state.CameraRenderState cameraState,
             org.joml.Matrix4fc modelViewMatrix,
             com.mojang.blaze3d.buffers.GpuBufferSlice terrainFog,
             org.joml.Vector4f fogColor,
@@ -40,7 +40,6 @@ public abstract class LevelRendererCloudResetMixin {
             @com.llamalad7.mixinextras.sugar.Local FrameGraphBuilder frame
     ) {
         if (!CloudDepthResetRenderer.shouldRender()) return;
-
         FramePass pass = frame.addPass("nostalgia_cloud_depth_reset");
         com.mojang.blaze3d.resource.ResourceHandle<RenderTarget> handle = pass.readsAndWrites(this.targets.main);
         this.targets.main = handle;
