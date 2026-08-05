@@ -5,7 +5,6 @@ import com.mojang.blaze3d.textures.GpuTexture;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.Lightmap;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
@@ -22,11 +21,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientLevel.class)
 abstract class RdFlatCardinalMixin {
-    private static final net.minecraft.world.level.CardinalLighting FLAT =
-        new net.minecraft.world.level.CardinalLighting(1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
+    private static final CardinalLighting FLAT =
+        new CardinalLighting(1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
 
     @Inject(method = "cardinalLighting", at = @At("HEAD"), cancellable = true)
-    private void nostalgia$flatInRD(CallbackInfoReturnable<net.minecraft.world.level.CardinalLighting> cir) {
+    private void nostalgia$flatInRD(CallbackInfoReturnable<CardinalLighting> cir) {
         ClientLevel self = (ClientLevel) (Object) this;
         if (self.dimension().equals(ModDimensions.RD_132211_LEVEL_KEY)) {
             cir.setReturnValue(FLAT);

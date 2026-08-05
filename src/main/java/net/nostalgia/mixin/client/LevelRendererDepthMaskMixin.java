@@ -26,7 +26,7 @@ public abstract class LevelRendererDepthMaskMixin {
             org.joml.Matrix4fc modelViewMatrix,
             com.mojang.blaze3d.buffers.GpuBufferSlice terrainFog,
             boolean renderOutline,
-            net.minecraft.client.renderer.state.level.LevelRenderState levelRenderState,
+            net.minecraft.client.renderer.state.LevelRenderState levelRenderState,
             DeltaTracker deltaTracker,
             net.minecraft.util.profiling.ProfilerFiller profiler,
             net.minecraft.client.renderer.chunk.ChunkSectionsToRender chunkSectionsToRender,
@@ -34,7 +34,6 @@ public abstract class LevelRendererDepthMaskMixin {
     ) {
         if (PortalDepthMaskRenderer.shouldRender()) {
             net.nostalgia.client.render.PortalSkyRenderer.capturedModelViewMatrix = new org.joml.Matrix4f(modelViewMatrix);
-            
             FramePass pass = frame.addPass("nostalgia_depth_mask");
             com.mojang.blaze3d.resource.ResourceHandle<RenderTarget> handle = pass.readsAndWrites(this.targets.main);
             this.targets.main = handle;
