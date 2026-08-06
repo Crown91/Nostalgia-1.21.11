@@ -40,14 +40,14 @@ public final class NixieLampRenderer {
             int energyRGB = energyColor & 0xFFFFFF;
             int glowAlphaOuter = (int) (110 * brightness);
             int glowAlphaInner = (int) (190 * brightness);
-            graphics.text(font, sym, tx - 1, ty, (glowAlphaOuter << 24) | energyRGB, false);
-            graphics.text(font, sym, tx + 1, ty, (glowAlphaOuter << 24) | energyRGB, false);
-            graphics.text(font, sym, tx, ty - 1, (glowAlphaOuter << 24) | energyRGB, false);
-            graphics.text(font, sym, tx, ty + 1, (glowAlphaOuter << 24) | energyRGB, false);
+            graphics.drawString(font, sym, tx - 1, ty, (glowAlphaOuter << 24) | energyRGB, false);
+            graphics.drawString(font, sym, tx + 1, ty, (glowAlphaOuter << 24) | energyRGB, false);
+            graphics.drawString(font, sym, tx, ty - 1, (glowAlphaOuter << 24) | energyRGB, false);
+            graphics.drawString(font, sym, tx, ty + 1, (glowAlphaOuter << 24) | energyRGB, false);
             int glowColInner = blendColor(0xFFFF7700, energyColor, 0.4f);
-            graphics.text(font, sym, tx, ty, (glowAlphaInner << 24) | (glowColInner & 0xFFFFFF), false);
+            graphics.drawString(font, sym, tx, ty, (glowAlphaInner << 24) | (glowColInner & 0xFFFFFF), false);
             int coreAlpha = (int) (255 * brightness);
-            graphics.text(font, sym, tx, ty, (coreAlpha << 24) | (0xFFFFF0A0 & 0xFFFFFF), false);
+            graphics.drawString(font, sym, tx, ty, (coreAlpha << 24) | (0xFFFFF0A0 & 0xFFFFFF), false);
         }
     }
 
