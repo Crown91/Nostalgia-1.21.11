@@ -1,0 +1,28 @@
+# Diagnostic only. Does not build anything.
+# Purpose: prove whether GitHub Actions can run and upload an artifact
+# in this repository at all, independently of the Gradle build.
+name: ping
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create a tiny file
+        run: |
+          mkdir -p ping-out
+          echo "actions are working" > ping-out/hello.txt
+          date >> ping-out/hello.txt
+          echo "commit: ${{ github.sha }}" >> ping-out/hello.txt
+          cat ping-out/hello.txt
+
+      - name: Upload it
+        uses: actions/upload-artifact@v4
+        with:
+          name: ping-artifact
+          path: ping-out/
+          if-no-files-found: error
