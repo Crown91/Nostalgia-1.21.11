@@ -1,52 +1,139 @@
-# Builds Nostalgia (Alpha Protocol) on GitHub's servers.
-# Requires libs/sha-1.0.7.jar to be committed into this repo (build it from the
-# SHA-1.21.11 project first, or download it from that repo's build artifacts).
-
 name: build
-on: [pull_request, push, workflow_dispatch]
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          persist-credentials: true
 
-      - name: setup jdk 25
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '25'
-          distribution: 'temurin'
+          java-version: '21'
+          distribution: temurin
 
-      - name: warn if SHA jar is missing
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.1'
+
+      - name: Report bundled libraries
         run: |
-          if [ ! -f libs/sha-1.0.7.jar ]; then
-            echo "::warning::libs/sha-1.0.7.jar not found - anything depending on SHA will fail to compile."
+          echo "--- contents of libs/ ---"
+          ls -la libs/ 2>/dev/null || echo "libs/ directory does not exist"
+          if [ ! -f libs/zemlya.jar ]; then
+            echo "::warning::libs/zemlya.jar not found - Zemlya will NOT be embedded and gravity API imports will fail to compile."
           fi
 
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: Restore Gradle wrapper if missing
+        id: wrapper
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "gradle-wrapper.jar is missing -> regenerating it"
+            gradle wrapper --gradle-version 9.4.1 --distribution-type bin
+            echo "regenerated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "gradle-wrapper.jar present"
+          fi
+          chmod +x gradlew
 
-      - name: build
+      - name: Commit restored wrapper
+        if: steps.wrapper.outputs.regenerated == 'true' && github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git update-index --chmod=+x gradlew || true
+          git add -A gradle/wrapper gradlew gradlew.bat
+          git commit -m "ci: restore Gradle wrapper (gradle-wrapper.jar)" || echo "nothing to commit"
+          git push || echo "push skipped"
+
+      - name: Build
+        id: build
+        continue-on-error: true
         run: |
           set -o pipefail
-          ./gradlew build --stacktrace 2>&1 | tee build-console.log
+          ./gradlew build --stacktrace --info --no-daemon 2>&1 | tee build.log
 
-      # Always upload, so a failed build still gives you the full log to share.
-      - name: capture build log
+      - name: Summarise compile errors
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p build-logs
+          grep -n 'error:' build.log > build-logs/errors.txt 2>/dev/null || true
+          echo "distinct error lines:" >> build-logs/errors.txt
+          grep -c 'error:' build.log >> build-logs/errors.txt 2>/dev/null || true
+          grep -n 'Cannot remap' build.log > build-logs/remap-warnings.txt 2>/dev/null || true
+
+      - name: Dump real 1.21.11 API signatures
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p build-logs
+          OUT=build-logs/api-dump.txt
+          : > "$OUT"
+          JARS=$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null)
+          CLASSES="net.minecraft.world.entity.Entity net.minecraft.world.entity.LivingEntity net.minecraft.world.entity.player.Player net.minecraft.server.level.ServerLevel net.minecraft.world.level.Level net.minecraft.client.Minecraft"
+          for C in $CLASSES; do
+            P=$(echo "$C" | tr '.' '/').class
+            FOUND=""
+            for J in $JARS; do
+              if unzip -l "$J" 2>/dev/null | grep -q "$P"; then
+                FOUND="$J"
+                break
+              fi
+            done
+            echo "" >> "$OUT"
+            echo "========== $C ==========" >> "$OUT"
+            if [ -z "$FOUND" ]; then
+              echo "class not present in any loom jar" >> "$OUT"
+            else
+              echo "# from: $FOUND" >> "$OUT"
+              javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
+            fi
+          done
+          echo "api dump complete"
+
+      - name: Collect logs and reports
+        if: always()
+        run: |
+          mkdir -p build-logs
+          cp -f build.log build-logs/build.log 2>/dev/null || true
+          cp -rf build/reports build-logs/reports 2>/dev/null || true
+          echo "build outcome: ${{ steps.build.outcome }}" > build-logs/outcome.txt
+          ls -R build-logs || true
+
+      - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
-          path: |
-            build/reports/
-            build-console.log
-            **/*.log
-          if-no-files-found: ignore
+          path: build-logs/
+          if-no-files-found: warn
+          retention-days: 30
 
-      - name: capture jar
-        if: success()
+      - name: Upload mod jars
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nostalgia-jar
-          path: build/libs/
+          name: nostalgia-jars
+          path: build/libs/*.jar
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Fail job if the build failed
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "::error::Gradle build failed - download the 'build-log' artifact for the full log"
+          exit 1
