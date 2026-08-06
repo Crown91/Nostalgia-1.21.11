@@ -50,7 +50,7 @@ public class ServerChunkTracker extends SavedData {
     ).apply(instance, ServerChunkTracker::new));
 
     public static SavedDataType<ServerChunkTracker> type() {
-        return new SavedDataType<>(net.minecraft.resources.Identifier.fromNamespaceAndPath("nostalgia", DATA_NAME), ServerChunkTracker::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+        return new SavedDataType<>(DATA_NAME, ServerChunkTracker::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
     }
 
     public static ServerChunkTracker get(ServerLevel overworld) {
@@ -64,7 +64,7 @@ public class ServerChunkTracker extends SavedData {
     }
 
     public void markDirty(BlockPos pos) {
-        long chunkKey = ChunkPos.pack(pos.getX() >> 4, pos.getZ() >> 4);
+        long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
         chunkVersions.put(chunkKey, System.currentTimeMillis());
         this.setDirty();
     }
