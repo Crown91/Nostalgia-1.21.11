@@ -11,7 +11,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
@@ -39,8 +38,8 @@ public class ThrownAmethystEntity extends ThrowableItemProjectile {
     private ParticleOptions getParticle() {
         ItemStack item = this.getItem();
         return (ParticleOptions)(item.isEmpty()
-                ? new ItemParticleOption(ParticleTypes.ITEM, ItemStackTemplate.fromNonEmptyStack(new ItemStack(Items.AMETHYST_SHARD)))
-                : new ItemParticleOption(ParticleTypes.ITEM, ItemStackTemplate.fromNonEmptyStack(item)));
+                ? new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(Items.AMETHYST_SHARD))
+                : new ItemParticleOption(ParticleTypes.ITEM, item));
     }
 
     @Override
