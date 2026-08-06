@@ -93,7 +93,7 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          CLASSES="net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider net.minecraft.data.recipes.SimpleCookingRecipeBuilder net.minecraft.client.renderer.LevelRenderer"
+          CLASSES="com.mojang.blaze3d.pipeline.RenderPipeline com.mojang.blaze3d.platform.DepthTestFunction com.mojang.blaze3d.pipeline.BlendFunction net.minecraft.client.Camera net.minecraft.client.gui.GuiGraphics"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -110,9 +110,8 @@ jobs:
             else
               echo "# from: $FOUND" >> "$OUT"
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
-              # nested classes such as FabricTagProvider$BlockTagProvider
-              javap -p -cp "$FOUND" "$C\$BlockTagProvider" >> "$OUT" 2>&1 || true
-              javap -p -cp "$FOUND" "$C\$ItemTagProvider" >> "$OUT" 2>&1 || true
+              # nested builder, e.g. RenderPipeline$Builder
+              javap -p -cp "$FOUND" "$C\$Builder" >> "$OUT" 2>&1 || true
             fi
           done
           echo "api dump complete"
