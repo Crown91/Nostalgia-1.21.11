@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
-import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -47,7 +46,7 @@ public class ZoneSavedData extends SavedData {
 
     public static SavedDataType<ZoneSavedData> type() {
         return new SavedDataType<>(
-                Identifier.fromNamespaceAndPath("nostalgia", DATA_NAME),
+                DATA_NAME,
                 () -> new ZoneSavedData(new java.util.ArrayList<>()),
                 CODEC,
                 DataFixTypes.SAVED_DATA_COMMAND_STORAGE
