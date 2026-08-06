@@ -83,8 +83,8 @@ jobs:
           mkdir -p build-logs
           OUT=build-logs/api-dump.txt
           : > "$OUT"
-          JARS=$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null)
-          CLASSES="net.minecraft.client.gui.GuiGraphics net.minecraft.client.gui.Gui net.minecraft.client.gui.screens.Screen net.minecraft.client.gui.screens.inventory.AbstractContainerScreen net.minecraft.client.gui.screens.LoadingOverlay net.minecraft.client.renderer.block.BlockRenderDispatcher net.minecraft.client.renderer.LevelRenderer net.minecraft.world.level.block.FarmBlock"
+          JARS=$(find ~/.gradle/caches/fabric-loom ~/.gradle/caches/modules-2 -name '*.jar' 2>/dev/null)
+          CLASSES="net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider\$BlockTagProvider net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider\$ItemTagProvider net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator\$Pack net.minecraft.data.recipes.SimpleCookingRecipeBuilder net.minecraft.world.level.block.FarmBlock net.minecraft.client.renderer.LevelRenderer"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -97,7 +97,7 @@ jobs:
             echo "" >> "$OUT"
             echo "========== $C ==========" >> "$OUT"
             if [ -z "$FOUND" ]; then
-              echo "class not present in any loom jar" >> "$OUT"
+              echo "class not present in any cached jar" >> "$OUT"
             else
               echo "# from: $FOUND" >> "$OUT"
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
