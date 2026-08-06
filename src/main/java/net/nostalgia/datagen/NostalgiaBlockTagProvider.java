@@ -16,7 +16,7 @@ public class NostalgiaBlockTagProvider extends FabricTagProvider.BlockTagProvide
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
-        getOrCreateTagBuilder(BlockTags.MINEABLE_WITH_PICKAXE)
+        builder(BlockTags.MINEABLE_WITH_PICKAXE)
             .add(AlphaBlocks.ALPHA_STONE_KEY)
             .add(AlphaBlocks.ALPHA_COBBLESTONE_KEY)
             .add(AlphaBlocks.ALPHA_MOSSY_COBBLESTONE_KEY)
@@ -28,14 +28,14 @@ public class NostalgiaBlockTagProvider extends FabricTagProvider.BlockTagProvide
             .add(AlphaBlocks.ALPHA_OBSIDIAN_KEY)
             .add(AlphaBlocks.ALPHA_FURNACE_KEY);
 
-        getOrCreateTagBuilder(BlockTags.MINEABLE_WITH_AXE)
+        builder(BlockTags.MINEABLE_WITH_AXE)
             .add(AlphaBlocks.ALPHA_OAK_LOG_KEY)
             .add(AlphaBlocks.ALPHA_OAK_PLANKS_KEY)
             .add(AlphaBlocks.ALPHA_BOOKSHELF_KEY)
             .add(AlphaBlocks.ALPHA_CHEST_KEY)
             .add(AlphaBlocks.ALPHA_CRAFTING_TABLE_KEY);
 
-        getOrCreateTagBuilder(BlockTags.MINEABLE_WITH_SHOVEL)
+        builder(BlockTags.MINEABLE_WITH_SHOVEL)
             .add(AlphaBlocks.ALPHA_DIRT_KEY)
             .add(AlphaBlocks.ALPHA_GRASS_BLOCK_KEY)
             .add(AlphaBlocks.ALPHA_FARMLAND_KEY)
@@ -44,29 +44,29 @@ public class NostalgiaBlockTagProvider extends FabricTagProvider.BlockTagProvide
             .add(AlphaBlocks.ALPHA_CLAY_KEY)
             .add(AlphaBlocks.ALPHA_SNOW_BLOCK_KEY);
 
-        getOrCreateTagBuilder(BlockTags.NEEDS_STONE_TOOL)
+        builder(BlockTags.NEEDS_STONE_TOOL)
             .add(AlphaBlocks.ALPHA_IRON_ORE_KEY);
 
-        getOrCreateTagBuilder(BlockTags.NEEDS_IRON_TOOL)
+        builder(BlockTags.NEEDS_IRON_TOOL)
             .add(AlphaBlocks.ALPHA_REDSTONE_ORE_KEY)
             .add(AlphaBlocks.ALPHA_DIAMOND_ORE_KEY);
 
-        getOrCreateTagBuilder(BlockTags.NEEDS_DIAMOND_TOOL)
+        builder(BlockTags.NEEDS_DIAMOND_TOOL)
             .add(AlphaBlocks.ALPHA_OBSIDIAN_KEY);
 
-        getOrCreateTagBuilder(BlockTags.CLIMBABLE)
+        builder(BlockTags.CLIMBABLE)
             .add(AlphaBlocks.ALPHA_LADDER_KEY);
 
-        getOrCreateTagBuilder(BlockTags.LOGS)
+        builder(BlockTags.LOGS)
             .add(AlphaBlocks.ALPHA_OAK_LOG_KEY);
 
-        getOrCreateTagBuilder(BlockTags.PLANKS)
+        builder(BlockTags.PLANKS)
             .add(AlphaBlocks.ALPHA_OAK_PLANKS_KEY);
 
-        getOrCreateTagBuilder(BlockTags.LEAVES)
+        builder(BlockTags.LEAVES)
             .add(AlphaBlocks.ALPHA_LEAVES_KEY);
 
-        getOrCreateTagBuilder(BlockTags.SAND)
+        builder(BlockTags.SAND)
             .add(AlphaBlocks.ALPHA_SAND_KEY);
 
         // BlockTags.SUPPORTS_CROPS does not exist in 1.21.11 - crop placement is
