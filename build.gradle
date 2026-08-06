@@ -77,19 +77,38 @@ dependencies {
 		logger.warn("SHA jar not found at ${shaJar} - build SHA-1.21.11 first and copy the jar there.")
 	}
 
-	// Optional local-only dependencies from the original build. They pointed at
-	// paths that do not exist in this checkout, so they are now opt-in.
+	// Optional local-only dependency from the original build.
 	def punchy = file("libs/punchy.jar")
 	if (punchy.exists()) {
 		modCompileOnly files(punchy)
 	}
-	def zemlyaMain = file("../Zemlya/build/classes/java/main")
-	def zemlyaClient = file("../Zemlya/build/classes/java/client")
-	if (zemlyaMain.exists()) {
-		compileOnly files(zemlyaMain)
-	}
-	if (zemlyaClient.exists()) {
-		compileOnly files(zemlyaClient)
+
+	// --- Zemlya (gravity library) ---------------------------------------
+	// Zemlya is a LIBRARY mod that Nostalgia depends on. It is not shipped
+	// separately: it is embedded into the Nostalgia jar via jar-in-jar, so
+	// users only install one file.
+	//
+	// Build Crown91/Zemlya-1.21.11 and copy build/libs/zemlya-<ver>.jar to
+	// ./libs/zemlya.jar (or pass -Pzemlya_jar=/path/to/zemlya.jar).
+	//
+	// Use the remapped release jar, NOT the -dev / -sources one.
+	def zemlyaJar = file(project.findProperty('zemlya_jar') ?: 'libs/zemlya.jar')
+	if (zemlyaJar.exists()) {
+		modImplementation files(zemlyaJar)
+		// jar-in-jar: nests zemlya.jar inside the produced Nostalgia jar
+		include files(zemlyaJar)
+	} else {
+		logger.warn("Zemlya jar not found at ${zemlyaJar} - it will NOT be embedded. " +
+				"Build Crown91/Zemlya-1.21.11 and copy its jar to libs/zemlya.jar.")
+		// Local dev fallback: compile against a sibling Zemlya checkout.
+		def zemlyaMain = file("../Zemlya/build/classes/java/main")
+		def zemlyaClient = file("../Zemlya/build/classes/java/client")
+		if (zemlyaMain.exists()) {
+			compileOnly files(zemlyaMain)
+		}
+		if (zemlyaClient.exists()) {
+			compileOnly files(zemlyaClient)
+		}
 	}
 }
 
@@ -105,14 +124,14 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	// 1.21.11 targets Java 21, not 25.
-	it.options.release = 22
+	// Minecraft 1.21.11 runs on Java 21.
+	it.options.release = 21
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_22
-	targetCompatibility = JavaVersion.VERSION_22
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType(Jar).configureEach {
