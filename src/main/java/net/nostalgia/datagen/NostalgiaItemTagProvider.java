@@ -19,16 +19,16 @@ public class NostalgiaItemTagProvider extends FabricTagProvider.ItemTagProvider 
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
-        getOrCreateTagBuilder(ItemTags.LOGS)
+        builder(ItemTags.LOGS)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_oak_log")));
 
-        getOrCreateTagBuilder(ItemTags.PLANKS)
+        builder(ItemTags.PLANKS)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_oak_planks")));
 
-        getOrCreateTagBuilder(ItemTags.LEAVES)
+        builder(ItemTags.LEAVES)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_leaves")));
 
-        getOrCreateTagBuilder(ItemTags.SAND)
+        builder(ItemTags.SAND)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_sand")));
     }
 }
