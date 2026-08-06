@@ -88,18 +88,33 @@ dependencies {
 	// separately: it is embedded into the Nostalgia jar via jar-in-jar, so
 	// users only install one file.
 	//
-	// Build Crown91/Zemlya-1.21.11 and copy build/libs/zemlya-<ver>.jar to
-	// ./libs/zemlya.jar (or pass -Pzemlya_jar=/path/to/zemlya.jar).
+	// Build Crown91/Zemlya-1.21.11 and copy build/libs/zemlya-<ver>.jar into
+	// ./libs/. ANY name matching zemlya*.jar is picked up, so there is no need
+	// to rename the file; if several are present the last by name wins.
+	// You can also point at an explicit file with -Pzemlya_jar=/path/to.jar
 	//
 	// Use the remapped release jar, NOT the -dev / -sources one.
-	def zemlyaJar = file(project.findProperty('zemlya_jar') ?: 'libs/zemlya.jar')
-	if (zemlyaJar.exists()) {
+	def zemlyaJar = null
+	if (project.hasProperty('zemlya_jar')) {
+		zemlyaJar = file(project.property('zemlya_jar'))
+	} else {
+		def candidates = fileTree(dir: 'libs',
+				includes: ['zemlya*.jar'],
+				excludes: ['*-sources.jar', '*-dev.jar', '*-sources-dev.jar']
+		).files.sort { it.name }
+		if (!candidates.isEmpty()) {
+			zemlyaJar = candidates.last()
+		}
+	}
+
+	if (zemlyaJar != null && zemlyaJar.exists()) {
+		logger.lifecycle("Zemlya library found: ${zemlyaJar} - it will be embedded via jar-in-jar.")
 		modImplementation files(zemlyaJar)
-		// jar-in-jar: nests zemlya.jar inside the produced Nostalgia jar
+		// jar-in-jar: nests the Zemlya jar inside the produced Nostalgia jar
 		include files(zemlyaJar)
 	} else {
-		logger.warn("Zemlya jar not found at ${zemlyaJar} - it will NOT be embedded. " +
-				"Build Crown91/Zemlya-1.21.11 and copy its jar to libs/zemlya.jar.")
+		logger.warn("No libs/zemlya*.jar found - Zemlya will NOT be embedded. " +
+				"Build Crown91/Zemlya-1.21.11 and copy its jar into libs/.")
 		// Local dev fallback: compile against a sibling Zemlya checkout.
 		def zemlyaMain = file("../Zemlya/build/classes/java/main")
 		def zemlyaClient = file("../Zemlya/build/classes/java/client")
