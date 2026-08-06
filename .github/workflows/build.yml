@@ -19,10 +19,13 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
           persist-credentials: true
 
-      - name: Set up JDK 21
+      # Minecraft 1.21.11 itself runs on Java 21, but the bundled SHA library
+      # bridges to the native Rapier physics engine through the final FFM API,
+      # which is non-preview only from Java 22 on (its classes are major 66).
+      - name: Set up JDK 22
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '22'
           distribution: temurin
 
       - name: Set up Gradle
@@ -34,8 +37,16 @@ jobs:
         run: |
           echo "--- contents of libs/ ---"
           ls -la libs/ 2>/dev/null || echo "libs/ directory does not exist"
-          if [ ! -f libs/zemlya.jar ]; then
-            echo "::warning::libs/zemlya.jar not found - Zemlya will NOT be embedded and gravity API imports will fail to compile."
+          # any zemlya*.jar counts; build.gradle picks it up by glob
+          if ! ls libs/zemlya*.jar >/dev/null 2>&1; then
+            echo "::warning::no libs/zemlya*.jar found - Zemlya will NOT be embedded into the produced jar."
+          else
+            echo "Zemlya library present: $(ls libs/zemlya*.jar)"
+          fi
+          if ! ls libs/sha*.jar >/dev/null 2>&1; then
+            echo "::warning::no libs/sha*.jar found - SHA API will not resolve."
+          else
+            echo "SHA library present: $(ls libs/sha*.jar)"
           fi
 
       - name: Restore Gradle wrapper if missing
@@ -79,6 +90,7 @@ jobs:
           echo "distinct error lines:" >> build-logs/errors.txt
           grep -c 'error:' build.log >> build-logs/errors.txt 2>/dev/null || true
           grep -n 'Cannot remap' build.log > build-logs/remap-warnings.txt 2>/dev/null || true
+          grep -n 'Zemlya library found\|no libs/zemlya' build.log > build-logs/zemlya-status.txt 2>/dev/null || true
 
       - name: Dump real 1.21.11 API signatures
         if: always()
@@ -93,7 +105,7 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          CLASSES="com.mojang.blaze3d.pipeline.RenderPipeline com.mojang.blaze3d.platform.DepthTestFunction com.mojang.blaze3d.pipeline.BlendFunction net.minecraft.client.Camera net.minecraft.client.gui.GuiGraphics"
+          CLASSES="net.minecraft.client.renderer.SubmitNodeCollector net.minecraft.client.renderer.block.model.BlockStateModel net.minecraft.client.renderer.block.model.BlockModelPart net.minecraft.server.MinecraftServer net.minecraft.world.level.ChunkPos"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -110,8 +122,6 @@ jobs:
             else
               echo "# from: $FOUND" >> "$OUT"
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
-              # nested builder, e.g. RenderPipeline$Builder
-              javap -p -cp "$FOUND" "$C\$Builder" >> "$OUT" 2>&1 || true
             fi
           done
           echo "api dump complete"
