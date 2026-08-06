@@ -48,13 +48,13 @@ public class EpilepsyWarningScreen extends Screen {
         int x = (this.width - textureWidth) / 2, y = (this.height - textureHeight) / 2;
         graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, FLASH_TEXTURE, x, y, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight);
         Component boldTitle = this.title.copy().withStyle(net.minecraft.network.chat.Style.EMPTY.withBold(true));
-        graphics.centeredText(this.font, boldTitle, this.width / 2, y + 25, 0xFFFFFFFF);
+        graphics.drawCenteredString(this.font, boldTitle, this.width / 2, y + 25, 0xFFFFFFFF);
         Component warningText = Component.translatable("gui.nostalgia.warning.text").copy().withStyle(net.minecraft.network.chat.Style.EMPTY.withBold(true));
-        graphics.textWithWordWrap(this.font, warningText, this.width / 2 - 85, y + 108, 170, 0xFFFFFFFF, true);
+        graphics.drawWordWrap(this.font, warningText, this.width / 2 - 85, y + 108, 170, 0xFFFFFFFF, true);
         int btnW = 130, btnH = 30, btnX = this.width / 2 - btnW / 2, btnY = this.height / 2 + 45;
         boolean hovered = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
         Component continueText = Component.translatable("gui.nostalgia.warning.continue").copy().withStyle(net.minecraft.network.chat.Style.EMPTY.withBold(true));
-        graphics.centeredText(this.font, continueText, this.width / 2, btnY + 11, hovered ? 0xFF55FFFF : 0xFFFFFFFF);
+        graphics.drawCenteredString(this.font, continueText, this.width / 2, btnY + 11, hovered ? 0xFF55FFFF : 0xFFFFFFFF);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
