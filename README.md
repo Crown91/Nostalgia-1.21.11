@@ -6,6 +6,10 @@ Travel between Minecraft eras from the modern game. Each era is its own dimensio
 
 ![Screenshot](.github/assets/screenshot.png)
 
+THIS IS NOT OFFICIAL VERSION!
+ALL CREDITS TO GUN2RAS
+ITS JUST 1.21.11 PORT
+
 ## Eras
 
 - Pre-Classic (RD-132211) - flat 256x256 world, very early Minecraft
