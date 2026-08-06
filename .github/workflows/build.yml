@@ -84,7 +84,7 @@ jobs:
           OUT=build-logs/api-dump.txt
           : > "$OUT"
           JARS=$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null)
-          CLASSES="net.minecraft.world.entity.Entity net.minecraft.world.entity.LivingEntity net.minecraft.world.entity.player.Player net.minecraft.server.level.ServerLevel net.minecraft.world.level.Level net.minecraft.client.Minecraft"
+          CLASSES="net.minecraft.client.gui.GuiGraphics net.minecraft.client.gui.Gui net.minecraft.client.gui.screens.Screen net.minecraft.client.gui.screens.inventory.AbstractContainerScreen net.minecraft.client.gui.screens.LoadingOverlay net.minecraft.client.renderer.block.BlockRenderDispatcher net.minecraft.client.renderer.LevelRenderer net.minecraft.world.level.block.FarmBlock"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
