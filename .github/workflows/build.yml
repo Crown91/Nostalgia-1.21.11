@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,6 +40,7 @@ jobs:
 
       - name: Restore Gradle wrapper if missing
         id: wrapper
+        timeout-minutes: 10
         run: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
             echo "gradle-wrapper.jar is missing -> regenerating it"
@@ -62,6 +64,7 @@ jobs:
       - name: Build
         id: build
         continue-on-error: true
+        timeout-minutes: 30
         run: |
           set -o pipefail
           ./gradlew build --stacktrace --info --no-daemon 2>&1 | tee build.log
@@ -69,6 +72,7 @@ jobs:
       - name: Summarise compile errors
         if: always()
         continue-on-error: true
+        timeout-minutes: 5
         run: |
           mkdir -p build-logs
           grep -n 'error:' build.log > build-logs/errors.txt 2>/dev/null || true
@@ -79,16 +83,21 @@ jobs:
       - name: Dump real 1.21.11 API signatures
         if: always()
         continue-on-error: true
+        timeout-minutes: 5
         run: |
           mkdir -p build-logs
           OUT=build-logs/api-dump.txt
           : > "$OUT"
-          JARS=$(find ~/.gradle/caches/fabric-loom ~/.gradle/caches/modules-2 -name '*.jar' 2>/dev/null)
-          CLASSES="net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider\$BlockTagProvider net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider\$ItemTagProvider net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator\$Pack net.minecraft.data.recipes.SimpleCookingRecipeBuilder net.minecraft.world.level.block.FarmBlock net.minecraft.client.renderer.LevelRenderer"
+          # Keep this list SMALL. Searching the whole Gradle cache takes hours.
+          JARS=$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null | head -100)
+          FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
+          ALL_JARS="$JARS $FABRIC_JARS"
+          echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
+          CLASSES="net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider net.minecraft.data.recipes.SimpleCookingRecipeBuilder net.minecraft.client.renderer.LevelRenderer"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
-            for J in $JARS; do
+            for J in $ALL_JARS; do
               if unzip -l "$J" 2>/dev/null | grep -q "$P"; then
                 FOUND="$J"
                 break
@@ -97,16 +106,21 @@ jobs:
             echo "" >> "$OUT"
             echo "========== $C ==========" >> "$OUT"
             if [ -z "$FOUND" ]; then
-              echo "class not present in any cached jar" >> "$OUT"
+              echo "class not present in the searched jars" >> "$OUT"
             else
               echo "# from: $FOUND" >> "$OUT"
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
+              # nested classes such as FabricTagProvider$BlockTagProvider
+              javap -p -cp "$FOUND" "$C\$BlockTagProvider" >> "$OUT" 2>&1 || true
+              javap -p -cp "$FOUND" "$C\$ItemTagProvider" >> "$OUT" 2>&1 || true
             fi
           done
           echo "api dump complete"
 
       - name: Collect logs and reports
         if: always()
+        continue-on-error: true
+        timeout-minutes: 5
         run: |
           mkdir -p build-logs
           cp -f build.log build-logs/build.log 2>/dev/null || true
