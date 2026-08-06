@@ -126,6 +126,12 @@ processResources {
 tasks.withType(JavaCompile).configureEach {
 	// Minecraft 1.21.11 runs on Java 21.
 	it.options.release = 21
+
+	// During the 26.1.2 -> 1.21.11 port the compiler hits javac's default cap of
+	// 100 reported errors, which hides the real total and makes progress
+	// impossible to measure. Report everything instead.
+	it.options.compilerArgs << "-Xmaxerrs" << "10000"
+	it.options.compilerArgs << "-Xmaxwarns" << "10000"
 }
 
 java {
