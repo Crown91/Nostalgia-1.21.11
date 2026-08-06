@@ -54,7 +54,7 @@ public class HologramWorldData extends SavedData {
     ).apply(instance, HologramWorldData::new));
 
     public static SavedDataType<HologramWorldData> type() {
-        return new SavedDataType<>(net.minecraft.resources.Identifier.fromNamespaceAndPath("nostalgia", DATA_NAME), HologramWorldData::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+        return new SavedDataType<>(DATA_NAME, HologramWorldData::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
     }
 
     public static HologramWorldData get(ServerLevel overworld) {
