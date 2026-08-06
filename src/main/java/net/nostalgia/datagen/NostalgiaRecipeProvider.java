@@ -9,7 +9,6 @@ import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.CookingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.nostalgia.block.AlphaBlocks;
 import net.nostalgia.item.AlphaItems;
@@ -53,14 +52,14 @@ public class NostalgiaRecipeProvider extends FabricRecipeProvider {
                 ShapedRecipeBuilder.shaped(registryLookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM), RecipeCategory.BUILDING_BLOCKS, AlphaBlocks.ALPHA_CHEST).pattern("XXX").pattern("X X").pattern("XXX").define('X', AlphaBlocks.ALPHA_OAK_PLANKS).unlockedBy("has_material", has(AlphaBlocks.ALPHA_OAK_PLANKS)).save(exporter);
                 ShapedRecipeBuilder.shaped(registryLookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM), RecipeCategory.BUILDING_BLOCKS, AlphaBlocks.ALPHA_FURNACE).pattern("XXX").pattern("X X").pattern("XXX").define('X', AlphaBlocks.ALPHA_COBBLESTONE).unlockedBy("has_material", has(AlphaBlocks.ALPHA_COBBLESTONE)).save(exporter);
                 ShapedRecipeBuilder.shaped(registryLookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM), RecipeCategory.MISC, AlphaItems.ALPHA_STICK, 4).pattern("X").pattern("X").define('X', AlphaBlocks.ALPHA_OAK_PLANKS).unlockedBy("has_material", has(AlphaBlocks.ALPHA_OAK_PLANKS)).save(exporter);
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_IRON_ORE), RecipeCategory.MISC, CookingBookCategory.MISC, AlphaItems.ALPHA_IRON_INGOT, 0.7F, 200).unlockedBy("has_iron_ore", has(AlphaBlocks.ALPHA_IRON_ORE)).save(exporter, "alpha_iron_ingot_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_IRON_ORE), RecipeCategory.MISC, AlphaItems.ALPHA_IRON_INGOT, 0.7F, 200).unlockedBy("has_iron_ore", has(AlphaBlocks.ALPHA_IRON_ORE)).save(exporter, "alpha_iron_ingot_from_smelting");
                 ShapedRecipeBuilder.shaped(registryLookup.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM), RecipeCategory.DECORATIONS, Items.TORCH, 4).pattern("X").pattern("#").define('X', AlphaItems.ALPHA_COAL).define('#', AlphaItems.ALPHA_STICK).unlockedBy("has_material", has(AlphaItems.ALPHA_COAL)).save(exporter, "vanilla_torch_from_alpha_coal");
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_GOLD_ORE), RecipeCategory.MISC, CookingBookCategory.MISC, AlphaItems.ALPHA_GOLD_INGOT, 1.0F, 200).unlockedBy("has_gold_ore", has(AlphaBlocks.ALPHA_GOLD_ORE)).save(exporter, "alpha_gold_ingot_from_smelting");
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_DIAMOND_ORE), RecipeCategory.MISC, CookingBookCategory.MISC, AlphaItems.ALPHA_DIAMOND, 1.0F, 200).unlockedBy("has_diamond_ore", has(AlphaBlocks.ALPHA_DIAMOND_ORE)).save(exporter, "alpha_diamond_from_smelting");
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_COAL_ORE), RecipeCategory.MISC, CookingBookCategory.MISC, AlphaItems.ALPHA_COAL, 0.1F, 200).unlockedBy("has_coal_ore", has(AlphaBlocks.ALPHA_COAL_ORE)).save(exporter, "alpha_coal_from_smelting");
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_COBBLESTONE), RecipeCategory.BUILDING_BLOCKS, CookingBookCategory.BLOCKS, AlphaBlocks.ALPHA_STONE, 0.1F, 200).unlockedBy("has_cobblestone", has(AlphaBlocks.ALPHA_COBBLESTONE)).save(exporter, "alpha_stone_from_smelting");
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaItems.ALPHA_PORKCHOP), RecipeCategory.FOOD, CookingBookCategory.FOOD, AlphaItems.ALPHA_COOKED_PORKCHOP, 0.35F, 200).unlockedBy("has_porkchop", has(AlphaItems.ALPHA_PORKCHOP)).save(exporter, "alpha_cooked_porkchop_from_smelting");
-                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaItems.ALPHA_CLAY_BALL), RecipeCategory.MISC, CookingBookCategory.MISC, AlphaItems.ALPHA_BRICK, 0.3F, 200).unlockedBy("has_clay_ball", has(AlphaItems.ALPHA_CLAY_BALL)).save(exporter, "alpha_brick_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_GOLD_ORE), RecipeCategory.MISC, AlphaItems.ALPHA_GOLD_INGOT, 1.0F, 200).unlockedBy("has_gold_ore", has(AlphaBlocks.ALPHA_GOLD_ORE)).save(exporter, "alpha_gold_ingot_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_DIAMOND_ORE), RecipeCategory.MISC, AlphaItems.ALPHA_DIAMOND, 1.0F, 200).unlockedBy("has_diamond_ore", has(AlphaBlocks.ALPHA_DIAMOND_ORE)).save(exporter, "alpha_diamond_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_COAL_ORE), RecipeCategory.MISC, AlphaItems.ALPHA_COAL, 0.1F, 200).unlockedBy("has_coal_ore", has(AlphaBlocks.ALPHA_COAL_ORE)).save(exporter, "alpha_coal_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaBlocks.ALPHA_COBBLESTONE), RecipeCategory.BUILDING_BLOCKS, AlphaBlocks.ALPHA_STONE, 0.1F, 200).unlockedBy("has_cobblestone", has(AlphaBlocks.ALPHA_COBBLESTONE)).save(exporter, "alpha_stone_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaItems.ALPHA_PORKCHOP), RecipeCategory.FOOD, AlphaItems.ALPHA_COOKED_PORKCHOP, 0.35F, 200).unlockedBy("has_porkchop", has(AlphaItems.ALPHA_PORKCHOP)).save(exporter, "alpha_cooked_porkchop_from_smelting");
+                SimpleCookingRecipeBuilder.smelting(Ingredient.of(AlphaItems.ALPHA_CLAY_BALL), RecipeCategory.MISC, AlphaItems.ALPHA_BRICK, 0.3F, 200).unlockedBy("has_clay_ball", has(AlphaItems.ALPHA_CLAY_BALL)).save(exporter, "alpha_brick_from_smelting");
             }
         };
     }
