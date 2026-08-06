@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.Registries;
 
-public class NostalgiaItemTagProvider extends FabricTagProvider.ItemTagsProvider {
+public class NostalgiaItemTagProvider extends FabricTagProvider.ItemTagProvider {
 
     public NostalgiaItemTagProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
         super(output, registriesFuture);
@@ -19,16 +19,16 @@ public class NostalgiaItemTagProvider extends FabricTagProvider.ItemTagsProvider
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
-        builder(ItemTags.LOGS)
+        getOrCreateTagBuilder(ItemTags.LOGS)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_oak_log")));
 
-        builder(ItemTags.PLANKS)
+        getOrCreateTagBuilder(ItemTags.PLANKS)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_oak_planks")));
 
-        builder(ItemTags.LEAVES)
+        getOrCreateTagBuilder(ItemTags.LEAVES)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_leaves")));
 
-        builder(ItemTags.SAND)
+        getOrCreateTagBuilder(ItemTags.SAND)
             .add(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("nostalgia", "alpha_sand")));
     }
 }
