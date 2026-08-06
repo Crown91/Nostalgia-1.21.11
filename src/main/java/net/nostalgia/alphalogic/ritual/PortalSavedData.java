@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
-import net.minecraft.resources.Identifier;
 
 import java.util.Optional;
 
@@ -53,7 +52,7 @@ public class PortalSavedData extends SavedData {
 
     public static SavedDataType<PortalSavedData> type() {
         return new SavedDataType<>(
-                Identifier.fromNamespaceAndPath("nostalgia", DATA_NAME),
+                DATA_NAME,
                 PortalSavedData::new,
                 CODEC,
                 DataFixTypes.SAVED_DATA_COMMAND_STORAGE
