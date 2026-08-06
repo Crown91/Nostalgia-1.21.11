@@ -139,8 +139,11 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	// Minecraft 1.21.11 runs on Java 21.
-	it.options.release = 21
+	// Minecraft 1.21.11 itself only needs Java 21, BUT the bundled SHA library
+	// bridges to the native Rapier physics engine through the final java.lang.foreign
+	// (FFM) API, which is non-preview only from Java 22 on. Its class files are
+	// major version 66, so the whole mod is built and shipped for Java 22+.
+	it.options.release = 22
 
 	// During the 26.1.2 -> 1.21.11 port the compiler hits javac's default cap of
 	// 100 reported errors, which hides the real total and makes progress
@@ -151,8 +154,8 @@ tasks.withType(JavaCompile).configureEach {
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_22
+	targetCompatibility = JavaVersion.VERSION_22
 }
 
 tasks.withType(Jar).configureEach {
