@@ -41,8 +41,12 @@ public class GlassBreakRenderer {
             .withFragmentShader(net.minecraft.resources.Identifier.fromNamespaceAndPath("nostalgia", "core/glass_break"))
             .withSampler("Sampler1")
             .withUniform("GlassData", UniformType.UNIFORM_BUFFER)
-            .withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
-            .withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false))
+            // 26.1 built pipeline state from ColorTargetState/DepthStencilState objects;
+            // 1.21.11 sets the same state directly on the builder.
+            .withBlend(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT)
+            // CompareOp.ALWAYS_PASS == NO_DEPTH_TEST; the trailing flag was depth write.
+            .withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthWrite(false)
             .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
             .build();
 
@@ -93,14 +97,13 @@ public class GlassBreakRenderer {
 
         net.minecraft.client.Camera camera = mc.gameRenderer.getMainCamera();
 
+        // Camera matrix access is centralised in UboShaderUtil so the 1.21.11
+        // replacement for the removed Camera matrix getters lives in one place.
         org.joml.Matrix4f invViewProj;
         if (PortalSkyRenderer.capturedProjectionMatrix != null && PortalSkyRenderer.capturedModelViewMatrix != null) {
             invViewProj = new org.joml.Matrix4f(PortalSkyRenderer.capturedProjectionMatrix).mul(PortalSkyRenderer.capturedModelViewMatrix).invert();
-        } else if (PortalSkyRenderer.capturedProjectionMatrix != null) {
-            org.joml.Matrix4f viewMatrix = camera.getViewRotationMatrix(new org.joml.Matrix4f());
-            invViewProj = new org.joml.Matrix4f(PortalSkyRenderer.capturedProjectionMatrix).mul(viewMatrix).invert();
         } else {
-            invViewProj = camera.getViewRotationProjectionMatrix(new org.joml.Matrix4f()).invert();
+            invViewProj = UboShaderUtil.getInverseViewProjMatrix(camera, PortalSkyRenderer.capturedProjectionMatrix);
         }
 
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
