@@ -35,8 +35,12 @@ public class PortalSkyRenderer {
             .withSampler("Sampler1")
             .withSampler("Sampler2")
             .withUniform("WhiteoutData", UniformType.UNIFORM_BUFFER)
-            .withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
-            .withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false))
+            // 26.1 built pipeline state from ColorTargetState/DepthStencilState objects;
+            // 1.21.11 sets the same state directly on the builder.
+            .withBlend(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT)
+            // CompareOp.ALWAYS_PASS == NO_DEPTH_TEST; the trailing flag was depth write.
+            .withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthWrite(false)
             .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
             .build();
 
