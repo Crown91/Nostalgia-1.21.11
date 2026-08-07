@@ -33,8 +33,15 @@ public class CloudDepthResetRenderer {
             .withSampler("Sampler1")
             .withSampler("Sampler2")
             .withUniform("WhiteoutData", UniformType.UNIFORM_BUFFER)
-            .withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(java.util.Optional.empty(), com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_NONE))
-            .withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, true))
+            // 26.1 built pipeline state from ColorTargetState/DepthStencilState objects;
+            // 1.21.11 sets the same state directly on the builder.
+            // ColorTargetState(Optional.empty(), WRITE_NONE) == write no colour at all.
+            .withoutBlend()
+            .withColorWrite(false)
+            // CompareOp.ALWAYS_PASS == never reject a fragment on depth == NO_DEPTH_TEST,
+            // and the trailing 'true' was the depth-write flag.
+            .withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthWrite(true)
             .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
             .build();
 
