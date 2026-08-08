@@ -2,7 +2,7 @@ package net.nostalgia.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -15,6 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * 26.1 split screen drawing into an "extract" phase and a render phase, so this class
+ * used to override extractBackground / extractLabels and take a GuiGraphicsExtractor.
+ * 1.21.11 draws in a single pass: the container background hook is
+ * renderBg(GuiGraphics, float partialTick, int mouseX, int mouseY) - note that the
+ * partial tick comes SECOND here, before the mouse coordinates.
+ */
 public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGravityMenu> {
 
     private static final int BG_WIDTH = 180;
@@ -65,7 +72,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
         this.titleLabelX = 8;
         this.titleLabelY = 4;
 
-        String[] glyphs = {"ᚦ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ"};
+        String[] glyphs = {"\u16A6", "\u16A2", "\u16A6", "\u16A8", "\u16B1", "\u16B2", "\u16B7", "\u16B9", "\u16BA", "\u16BE", "\u16C1", "\u16C3", "\u16C7", "\u16C8", "\u16C9", "\u16CA", "\u16CF", "\u16D2"};
         Random r = new Random(888);
 
         int[][] positions = {
@@ -231,7 +238,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = (this.width - BG_WIDTH) / 2;
         int y = (this.height - BG_HEIGHT) / 2;
         int cx = x + BG_WIDTH / 2;
@@ -405,10 +412,10 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
             int finalCore = blendColors(idleRuneColor, activeCore, energyLevel);
 
             if (energyLevel > 0.01f) {
-                graphics.text(this.font, rune.symbol, x + rune.x - 1, y + rune.y - 1, finalGlow, false);
-                graphics.text(this.font, rune.symbol, x + rune.x + 1, y + rune.y + 1, finalGlow, false);
+                graphics.drawString(this.font, rune.symbol, x + rune.x - 1, y + rune.y - 1, finalGlow, false);
+                graphics.drawString(this.font, rune.symbol, x + rune.x + 1, y + rune.y + 1, finalGlow, false);
             }
-            graphics.text(this.font, rune.symbol, x + rune.x, y + rune.y, finalCore, false);
+            graphics.drawString(this.font, rune.symbol, x + rune.x, y + rune.y, finalCore, false);
         }
 
 
@@ -456,10 +463,10 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
 
 
             String runeSymbol = switch (dirIdx) {
-                case 0 -> "ᛏ";
-                case 1 -> "ᛦ";
-                case 2 -> "ᚲ";
-                case 3 -> "ᚦ";
+                case 0 -> "\u16CF";
+                case 1 -> "\u16E6";
+                case 2 -> "\u16B2";
+                case 3 -> "\u16A6";
                 default -> "";
             };
             
@@ -469,10 +476,10 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
 
             if (hover && energyLevel > 0.01f) {
                 int glowCol = ((int)(40 * energyLevel) << 24) | 0xa89cb8;
-                graphics.text(this.font, runeSymbol, cx_btn - 3, cy_btn - 5, glowCol, false);
-                graphics.text(this.font, runeSymbol, cx_btn - 3, cy_btn - 3, glowCol, false);
+                graphics.drawString(this.font, runeSymbol, cx_btn - 3, cy_btn - 5, glowCol, false);
+                graphics.drawString(this.font, runeSymbol, cx_btn - 3, cy_btn - 3, glowCol, false);
             }
-            graphics.text(this.font, runeSymbol, cx_btn - 3, cy_btn - 4, finalRuneCol, false);
+            graphics.drawString(this.font, runeSymbol, cx_btn - 3, cy_btn - 4, finalRuneCol, false);
 
 
         }
@@ -505,7 +512,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
     }
 
     @Override
-    public void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
     }
 
     private int blendColors(int col1, int col2, float ratio) {
@@ -528,7 +535,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
     }
 
 
-    private void drawCircle(GuiGraphicsExtractor graphics, int cx, int cy, float radius, int thickness, int baseColor, float pTime, float energy, float pullX, float pullY) {
+    private void drawCircle(GuiGraphics graphics, int cx, int cy, float radius, int thickness, int baseColor, float pTime, float energy, float pullX, float pullY) {
         int numPoints = energy > 0.1f ? 48 : 32;
         int prevX = 0, prevY = 0;
         boolean first = true;
@@ -572,7 +579,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
     }
 
 
-    private void drawThickSegment(GuiGraphicsExtractor graphics, int x1, int y1, int x2, int y2, int thickness, int color) {
+    private void drawThickSegment(GuiGraphics graphics, int x1, int y1, int x2, int y2, int thickness, int color) {
         float dx = x2 - x1;
         float dy = y2 - y1;
         float L = (float) Math.sqrt(dx * dx + dy * dy);
@@ -593,7 +600,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
         graphics.pose().popMatrix();
     }
 
-    private void drawPixelBlock(GuiGraphicsExtractor graphics, int px, int py, int thickness, int color) {
+    private void drawPixelBlock(GuiGraphics graphics, int px, int py, int thickness, int color) {
         if (thickness <= 1) {
             graphics.fill(px, py, px + 1, py + 1, color);
         } else if (thickness == 2) {
@@ -604,7 +611,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
     }
 
 
-    private void draw3DGyroscopeRing(GuiGraphicsExtractor graphics, int cx, int cy, float radius, float yaw, float pitch, float roll, int color, float surge, float energy) {
+    private void draw3DGyroscopeRing(GuiGraphics graphics, int cx, int cy, float radius, float yaw, float pitch, float roll, int color, float surge, float energy) {
         int numPoints = 24;
         int prevX = 0, prevY = 0;
         boolean first = true;
@@ -658,7 +665,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
         }
     }
 
-    private void drawArrowShape(GuiGraphicsExtractor graphics, int cx, int cy, int direction, int color) {
+    private void drawArrowShape(GuiGraphics graphics, int cx, int cy, int direction, int color) {
         switch (direction) {
             case 0 -> {
                 graphics.fill(cx - 1, cy - 3, cx + 2, cy + 3, color);
