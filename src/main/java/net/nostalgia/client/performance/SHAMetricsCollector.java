@@ -2,7 +2,10 @@ package net.nostalgia.client.performance;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+// 26.1 split GUI rendering into an extract phase with its own GuiGraphicsExtractor.
+// 1.21.11 is single-pass and uses GuiGraphics, and its text helpers are named
+// drawString / drawCenteredString / drawWordWrap.
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.DeltaTracker;
 import net.nostalgia.client.events.caches.impl.AlphaByteCache;
 import net.nostalgia.client.events.caches.providers.DimensionHologramRegistry;
@@ -95,7 +98,7 @@ public class SHAMetricsCollector {
             target, mb, ms, ms > 0 ? (mb / (ms / 1000.0)) : 0.0));
     }
 
-    public static void drawHUD(GuiGraphicsExtractor graphics, DeltaTracker tracker) {
+    public static void drawHUD(GuiGraphics graphics, DeltaTracker tracker) {
         if (!overlayActive) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -119,7 +122,7 @@ public class SHAMetricsCollector {
         graphics.fill(x + w - 1, y, x + w, y + h, 0x40000000);
 
         int ty = y + 8;
-        graphics.text(font, "§b§lSHA PERFORMANCE PROFILER", x + 12, ty, 0xFF00FFFF, false);
+        graphics.drawString(font, "§b§lSHA PERFORMANCE PROFILER", x + 12, ty, 0xFF00FFFF, false);
         ty += 12;
         graphics.fill(x + 10, ty, x + w - 10, ty + 1, 0x25FFFFFF);
         ty += 8;
@@ -154,40 +157,40 @@ public class SHAMetricsCollector {
         float avgCompile = getAverage(compileHistory);
 
 
-        graphics.text(font, "§fSky Render: §a" + String.format(Locale.US, "%.3f ms", avgRender) + " §7(last: " + String.format(Locale.US, "%.2f", lastRenderTimeNs / 1_000_000.0f) + ")", x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fSky Render: §a" + String.format(Locale.US, "%.3f ms", avgRender) + " §7(last: " + String.format(Locale.US, "%.2f", lastRenderTimeNs / 1_000_000.0f) + ")", x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
-        graphics.text(font, "§fSodium Spoof: §a" + String.format(Locale.US, "%.3f ms", avgCompile) + " §7(last: " + String.format(Locale.US, "%.2f", lastCompileTimeNs / 1_000_000.0f) + ")", x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fSodium Spoof: §a" + String.format(Locale.US, "%.3f ms", avgCompile) + " §7(last: " + String.format(Locale.US, "%.2f", lastCompileTimeNs / 1_000_000.0f) + ")", x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
-        graphics.text(font, "§fRAM cache: §d" + String.format(Locale.US, "%.2f MB", totalRAM), x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fRAM cache: §d" + String.format(Locale.US, "%.2f MB", totalRAM), x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
-        graphics.text(font, "§fCached chunks: §e" + alphaChunks + " §7(Alpha)", x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fCached chunks: §e" + alphaChunks + " §7(Alpha)", x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
-        graphics.text(font, "§fCached sections: §e" + totalSections + " §7(Other)", x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fCached sections: §e" + totalSections + " §7(Other)", x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
-        graphics.text(font, "§fOverrides: §e" + totalOverrides + " §7(Deltas)", x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fOverrides: §e" + totalOverrides + " §7(Deltas)", x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
 
         boolean renderActive = net.nostalgia.client.render.PortalSkyRenderer.active;
         boolean groundedActive = false;
-        graphics.text(font, "§fHolograms: " + (renderActive ? "§aPORTAL" : (groundedActive ? "§aGROUNDED" : "§cOFF")), x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fHolograms: " + (renderActive ? "§aPORTAL" : (groundedActive ? "§aGROUNDED" : "§cOFF")), x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
 
 
         ty += 4;
         graphics.fill(x + 10, ty, x + w - 10, ty + 1, 0x25FFFFFF);
         ty += 6;
-        graphics.text(font, "§b§lDISK CACHE SYSTEM:", x + 12, ty, 0xFF00FFFF, false);
+        graphics.drawString(font, "§b§lDISK CACHE SYSTEM:", x + 12, ty, 0xFF00FFFF, false);
         ty += 12;
         String readText = lastDiskReadTimeMs > 0 ? String.format(Locale.US, "§a%d ms §7(%.2f MB)", lastDiskReadTimeMs, lastDiskReadSizeMB) : "§7None";
-        graphics.text(font, "§fLast Load: " + readText, x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fLast Load: " + readText, x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
         String writeText = lastDiskWriteTimeMs > 0 ? String.format(Locale.US, "§a%d ms §7(%.2f MB)", lastDiskWriteTimeMs, lastDiskWriteSizeMB) : "§7None";
-        graphics.text(font, "§fLast Save: " + writeText, x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§fLast Save: " + writeText, x + 12, ty, 0xFFFFFFFF, false);
         ty += 12;
 
 
         ty += 6;
-        graphics.text(font, "§7Latency Timeline (last 50 frames)", x + 12, ty, 0xFFAAAAAA, false);
+        graphics.drawString(font, "§7Latency Timeline (last 50 frames)", x + 12, ty, 0xFFAAAAAA, false);
         ty += 12;
 
         int graphH = 45;
@@ -221,7 +224,7 @@ public class SHAMetricsCollector {
 
         graphics.fill(x + 10, ty, x + w - 10, ty + 1, 0x25FFFFFF);
         ty += 6;
-        graphics.text(font, "§b§lLAST HOLOGRAM EVENT:", x + 12, ty, 0xFF00FFFF, false);
+        graphics.drawString(font, "§b§lLAST HOLOGRAM EVENT:", x + 12, ty, 0xFF00FFFF, false);
         ty += 12;
 
         String lastEvent = "No events logged";
@@ -234,7 +237,7 @@ public class SHAMetricsCollector {
         if (lastEvent.length() > 38) {
             lastEvent = lastEvent.substring(0, 35) + "...";
         }
-        graphics.text(font, "§e" + lastEvent, x + 12, ty, 0xFFFFFFFF, false);
+        graphics.drawString(font, "§e" + lastEvent, x + 12, ty, 0xFFFFFFFF, false);
     }
 
     private static float getAverage(List<Float> list) {
