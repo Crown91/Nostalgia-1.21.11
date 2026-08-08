@@ -21,6 +21,10 @@ import java.util.Random;
  * 1.21.11 draws in a single pass: the container background hook is
  * renderBg(GuiGraphics, float partialTick, int mouseX, int mouseY) - note that the
  * partial tick comes SECOND here, before the mouse coordinates.
+ *
+ * GuiGraphics.outline(x, y, w, h, color) is also gone in 1.21.11. Vanilla drew it as
+ * four fill() calls, so outlineRect() below reproduces exactly that geometry with
+ * fill(), which is unchanged between the two versions.
  */
 public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGravityMenu> {
 
@@ -311,8 +315,8 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
         isHoveringButton = hoveringAny;
 
         graphics.fill(x, y, x + BG_WIDTH, y + 142, 0xFF5C6067);
-        graphics.outline(x, y, BG_WIDTH, 142, 0xFF232629);
-        graphics.outline(x + 2, y + 2, BG_WIDTH - 4, 138, 0xFF8C929A);
+        outlineRect(graphics, x, y, BG_WIDTH, 142, 0xFF232629);
+        outlineRect(graphics, x + 2, y + 2, BG_WIDTH - 4, 138, 0xFF8C929A);
 
         Random stoneRand = new Random(777);
         for (int i = 0; i < 35; i++) {
@@ -325,16 +329,16 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
         }
 
         graphics.fill(x, y + 142, x + BG_WIDTH, y + BG_HEIGHT, 0xFF484D52);
-        graphics.outline(x, y + 142, BG_WIDTH, BG_HEIGHT - 142, 0xFF232629);
-        graphics.outline(x + 2, y + 144, BG_WIDTH - 4, BG_HEIGHT - 146, 0xFF757A80);
+        outlineRect(graphics, x, y + 142, BG_WIDTH, BG_HEIGHT - 142, 0xFF232629);
+        outlineRect(graphics, x + 2, y + 144, BG_WIDTH - 4, BG_HEIGHT - 146, 0xFF757A80);
 
 
-        graphics.outline(x + 8, y + 146, 164, 20, 0xFF232629);
+        outlineRect(graphics, x + 8, y + 146, 164, 20, 0xFF232629);
         for (int col = 0; col < 9; col++) {
             int slotX = x + 9 + col * 18;
             int slotY = y + 147;
             graphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0xFF232629);
-            graphics.outline(slotX - 1, slotY - 1, 18, 18, 0xFF5C6067);
+            outlineRect(graphics, slotX - 1, slotY - 1, 18, 18, 0xFF5C6067);
         }
 
 
@@ -349,8 +353,8 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
 
         int outerSquareColor = blendColors(0xFF232629, (activeEnergyColor & 0xFFFFFF) | 0xCC000000, energyLevel);
         int innerSquareColor = blendColors(0xFF757A80, (coreEnergyColor & 0xFFFFFF) | 0xDD000000, energyLevel);
-        graphics.outline(cx - 14, cy - 14, 28, 28, outerSquareColor);
-        graphics.outline(cx - 15, cy - 15, 30, 30, innerSquareColor);
+        outlineRect(graphics, cx - 14, cy - 14, 28, 28, outerSquareColor);
+        outlineRect(graphics, cx - 15, cy - 15, 30, 30, innerSquareColor);
 
 
         double[] angles = {0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, 5 * Math.PI / 4, 3 * Math.PI / 2, 7 * Math.PI / 4};
@@ -494,7 +498,7 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
         graphics.pose().translate(cx, cy);
         graphics.pose().rotate(hoverSpin);
         int finalSlotOutline = blendColors(0xFF232629, targetSlotOutline, energyLevel);
-        graphics.outline(-10, -10, 20, 20, finalSlotOutline);
+        outlineRect(graphics, -10, -10, 20, 20, finalSlotOutline);
         graphics.pose().popMatrix();
 
         for (MagicSpark s : sparks) {
@@ -513,6 +517,17 @@ public class LodestoneGravityScreen extends AbstractContainerScreen<LodestoneGra
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    }
+
+    /**
+     * 1px hollow rectangle, the exact geometry 26.1's GuiGraphics.outline drew:
+     * top row, bottom row, then the two side columns between them.
+     */
+    private void outlineRect(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
     }
 
     private int blendColors(int col1, int col2, float ratio) {
