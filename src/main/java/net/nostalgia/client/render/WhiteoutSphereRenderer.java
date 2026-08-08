@@ -37,9 +37,12 @@ public class WhiteoutSphereRenderer {
             .withFragmentShader(net.minecraft.resources.Identifier.fromNamespaceAndPath("nostalgia", "core/radial_whiteout"))
             .withSampler("Sampler1")
             .withUniform("WhiteoutData", UniformType.UNIFORM_BUFFER)
-            .withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
-            .withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false))
-            
+            // 26.1 built pipeline state from ColorTargetState/DepthStencilState objects;
+            // 1.21.11 sets the same state directly on the builder.
+            .withBlend(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT)
+            // CompareOp.ALWAYS_PASS == NO_DEPTH_TEST; the trailing flag was depth write.
+            .withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthWrite(false)
             .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
             .build();
 
@@ -115,9 +118,10 @@ public class WhiteoutSphereRenderer {
             
             builder.putVec4((float)camPos.x, (float)camPos.y, (float)camPos.z, cloudHeight);
 
-            long dayTime = mc.level.getDefaultClockTime(); 
+            // 26.1 called this getDefaultClockTime(); in 1.21.11 it is Level.getDayTime().
+            long dayTime = mc.level.getDayTime(); 
 
-            float timeOfDay = (float)(mc.level.getDefaultClockTime() % 24000L) / 24000.0F;
+            float timeOfDay = (float)(dayTime % 24000L) / 24000.0F;
             float cosTime = (float) Math.cos((timeOfDay - 0.25F) * 3.1415927F * 2.0F) * 2.0F + 0.5F;
             cosTime = Math.max(0.0f, Math.min(cosTime, 1.0f));
             builder.putVec4(0.47f * cosTime, 0.66f * cosTime, 1.0f * cosTime, 1.0f);
