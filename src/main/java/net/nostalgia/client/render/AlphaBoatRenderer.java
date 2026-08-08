@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.entity.state.BoatRenderState;
 import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
@@ -38,7 +39,19 @@ public class AlphaBoatRenderer extends EntityRenderer<AlphaBoatEntity, BoatRende
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
         this.model.setupAnim(state);
-        submitNodeCollector.submitModel(this.model, state, poseStack, BOAT_TEXTURE, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, null);
+        // 1.21.11 takes a RenderType here, not a bare texture id. Model.renderType(id)
+        // applies the model's own render type function to the texture, which is exactly
+        // what the vanilla boat renderer does.
+        submitNodeCollector.submitModel(
+                this.model,
+                state,
+                poseStack,
+                this.model.renderType(BOAT_TEXTURE),
+                state.lightCoords,
+                OverlayTexture.NO_OVERLAY,
+                state.outlineColor,
+                (ModelFeatureRenderer.CrumblingOverlay) null
+        );
         poseStack.popPose();
         super.submit(state, poseStack, submitNodeCollector, camera);
     }
