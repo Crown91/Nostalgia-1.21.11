@@ -2,7 +2,7 @@ package net.nostalgia.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -351,7 +351,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         long now = System.currentTimeMillis();
         if (this.lastManualTickTime == 0) {
             this.lastManualTickTime = now;
@@ -377,13 +377,13 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
 
         graphics.fill(cx - 3, cy - 3, cx + 19, cy + 19, 0xFF0A0510);
         graphics.fill(cx - 2, cy - 2, cx + 18, cy + 18, TimeMachineLayout.SLOT_BG);
-        graphics.outline(cx - 3, cy - 3, 22, 22, this.isOverloading ? (0xFF000000 | this.currentEnergyColor) : TimeMachineLayout.SLOT_BORDER);
+        outlineRect(graphics, cx - 3, cy - 3, 22, 22, this.isOverloading ? (0xFF000000 | this.currentEnergyColor) : TimeMachineLayout.SLOT_BORDER);
 
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        this.extractTooltip(graphics, mouseX, mouseY);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
-    private void renderChassis(GuiGraphicsExtractor graphics, int x, int y) {
+    private void renderChassis(GuiGraphics graphics, int x, int y) {
         graphics.fill(x, y, x + this.imageWidth, y + this.imageHeight, TimeMachineLayout.BACKGROUND_COLOR);
         Random woodRand = new Random(1337);
         for (int i = 0; i < 15; i++) {
@@ -455,7 +455,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
         }
     }
 
-    private void renderWiresAndPlasma(GuiGraphicsExtractor graphics, int x, int y, float gameTime, float renderedProgress, float overloadProgress) {
+    private void renderWiresAndPlasma(GuiGraphics graphics, int x, int y, float gameTime, float renderedProgress, float overloadProgress) {
         if (this.wires != null) {
             for (PlasmaWireRenderer.WirePath w : this.wires) {
                 PlasmaWireRenderer.drawWireBase(graphics, w, x, y);
@@ -493,7 +493,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
         }
     }
 
-    private void renderFuelSlot(GuiGraphicsExtractor graphics, int x, int y, float gameTime, float renderedProgress, float overloadProgress) {
+    private void renderFuelSlot(GuiGraphics graphics, int x, int y, float gameTime, float renderedProgress, float overloadProgress) {
         int sx = x + TimeMachineLayout.SLOT_X;
         int sy = y + TimeMachineLayout.SLOT_Y;
 
@@ -517,7 +517,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
             for (int r = 1; r <= (int) radius; r++) {
                 int a = (int) (alphaGlow * (1.0f - (float) r / radius));
                 int col = (a << 24) | (this.currentEnergyColor & 0xFFFFFF);
-                graphics.outline(sx + 8 - r, sy + 8 - r, r * 2, r * 2, col);
+                outlineRect(graphics, sx + 8 - r, sy + 8 - r, r * 2, r * 2, col);
             }
             PlasmaWireRenderer.drawSlotLightning(graphics, x, y, gameTime, this.currentEnergyColor, overloadProgress);
         }
@@ -545,8 +545,8 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
             int waveY = (y + 126) - 11 - (int) waveSize;
             int waveW = 22 + (int) waveSize * 2;
             int waveH = 22 + (int) waveSize * 2;
-            graphics.outline(waveX, waveY, waveW, waveH, colWave);
-            graphics.outline(waveX - 1, waveY - 1, waveW + 2, waveH + 2, colWave);
+            outlineRect(graphics, waveX, waveY, waveW, waveH, colWave);
+            outlineRect(graphics, waveX - 1, waveY - 1, waveW + 2, waveH + 2, colWave);
             int flashAlpha = (int) (this.connectionPulse * 45.0f);
             int colFlash = (flashAlpha << 24) | (rCol << 16) | (gCol << 8) | bCol;
             graphics.fill(x, y, x + this.imageWidth, y + this.imageHeight, colFlash);
@@ -554,7 +554,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
 
@@ -579,7 +579,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
         }
 
 
-        graphics.outline(x, panelTop, this.imageWidth, this.imageHeight - 142, TimeMachineLayout.GOLD_SHADOW);
+        outlineRect(graphics, x, panelTop, this.imageWidth, this.imageHeight - 142, TimeMachineLayout.GOLD_SHADOW);
         int pL = x + 2;
         int pR = x + this.imageWidth - 2;
         int pT = panelTop + 2;
@@ -590,7 +590,7 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
         graphics.fill(pL + 1, pB - 1, pR - 1, pB, TimeMachineLayout.GOLD_SHADOW);
 
 
-        graphics.outline(x + 7, y + 146, 162, 18, 0xFF1E1008);
+        outlineRect(graphics, x + 7, y + 146, 162, 18, 0xFF1E1008);
 
 
         for (int col = 0; col < 9; col++) {
@@ -598,8 +598,8 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
             int slotY = y + 147;
 
             graphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0xFF0B0604);
-            graphics.outline(slotX - 1, slotY - 1, 18, 18, TimeMachineLayout.GOLD_BORDER_R);
-            graphics.outline(slotX, slotY, 16, 16, 0xFF1E1008);
+            outlineRect(graphics, slotX - 1, slotY - 1, 18, 18, TimeMachineLayout.GOLD_BORDER_R);
+            outlineRect(graphics, slotX, slotY, 16, 16, 0xFF1E1008);
         }
 
 
@@ -651,7 +651,18 @@ public class TimeMachineScreen extends AbstractContainerScreen<TimeMachineMenu> 
     }
 
     @Override
-    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    }
+
+    /**
+     * 1px hollow rectangle, the exact geometry 26.1's GuiGraphics.outline drew:
+     * top row, bottom row, then the two side columns between them.
+     */
+    private void outlineRect(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
     }
 
     private boolean isHoveringArea(int x, int y, int width, int height, double mouseX, double mouseY) {
