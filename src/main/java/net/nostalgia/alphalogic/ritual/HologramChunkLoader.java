@@ -80,8 +80,8 @@ public class HologramChunkLoader {
         int centerCZ = center.getZ() >> 4;
         
         sortedChunks.sort(java.util.Comparator.comparingDouble(pos -> {
-            double dx = pos.x() - centerCX;
-            double dz = pos.z() - centerCZ;
+            double dx = pos.x - centerCX;
+            double dz = pos.z - centerCZ;
             return dx * dx + dz * dz;
         }));
         
@@ -123,7 +123,7 @@ public class HologramChunkLoader {
             while ((posToPoll = task.pendingFutures.poll()) != null) {
                 final ChunkPos finalPos = posToPoll;
                 java.util.concurrent.CompletableFuture.supplyAsync(() -> 
-                    task.level.getChunkSource().getChunkFuture(finalPos.x(), finalPos.z(), ChunkStatus.FEATURES, true),
+                    task.level.getChunkSource().getChunkFuture(finalPos.x, finalPos.z, ChunkStatus.FEATURES, true),
                     java.util.concurrent.ForkJoinPool.commonPool()
                 ).thenCompose(f -> f).thenAcceptAsync(result -> {
                     ChunkAccess chunk = result != null ? result.orElse(null) : null;
@@ -212,14 +212,14 @@ public class HologramChunkLoader {
                         }
                     }
 
-                    localList.add(new S2CDimensionSectionsPayload.SectionData(pos.x(), sy, pos.z(), paletteList.toIntArray(), indices, biomePaletteList.toIntArray(), biomeIndices));
+                    localList.add(new S2CDimensionSectionsPayload.SectionData(pos.x, sy, pos.z, paletteList.toIntArray(), indices, biomePaletteList.toIntArray(), biomeIndices));
                 }
             }
 
             if (!localList.isEmpty() || chunk != null) {
                 synchronized (task.buffer) {
                     task.buffer.addAll(localList);
-                    long chunkKey = pos.pack();
+                    long chunkKey = ChunkPos.asLong(pos.x, pos.z);
                     task.bufferChunkPos.add(chunkKey);
                     task.bufferChunkVer.add(ServerChunkTracker.get(task.level).getVersion(chunkKey));
                 }
