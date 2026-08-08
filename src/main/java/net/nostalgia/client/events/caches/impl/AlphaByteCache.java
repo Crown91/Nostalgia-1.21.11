@@ -84,11 +84,11 @@ public class AlphaByteCache {
             java.util.List<ChunkPos> toGen = new java.util.ArrayList<>();
             for (int cx = -radiusChunks; cx <= radiusChunks; cx++) {
                 for (int cz = -radiusChunks; cz <= radiusChunks; cz++) {
-                    toGen.add(new ChunkPos(centerChunk.x() + cx, centerChunk.z() + cz));
+                    toGen.add(new ChunkPos(centerChunk.x + cx, centerChunk.z + cz));
                 }
             }
             toGen.sort(java.util.Comparator.comparingDouble(cp ->
-                Math.pow(cp.x() - centerChunk.x(), 2) + Math.pow(cp.z() - centerChunk.z(), 2)
+                Math.pow(cp.x - centerChunk.x, 2) + Math.pow(cp.z - centerChunk.z, 2)
             ));
 
             Map<ChunkPos, byte[]> diskCache = net.nostalgia.client.events.caches.providers.HologramDiskCache.loadAlphaCache(dimensionId, seed);
@@ -104,13 +104,13 @@ public class AlphaByteCache {
                     if (!CHUNK_CACHE.containsKey(cp)) {
                         byte[] data = new byte[32768];
                         net.nostalgia.client.events.caches.providers.DimensionHologramProvider provider = UniversalHologramCache.getProvider(dimensionId);
-                        provider.generateChunkData(cp.x(), cp.z(), data, seed);
+                        provider.generateChunkData(cp.x, cp.z, data, seed);
                         putChunkData(cp, data);
                     }
                 });
 
                 java.util.concurrent.ConcurrentHashMap<Long, byte[]> fastCache = new java.util.concurrent.ConcurrentHashMap<>(CHUNK_CACHE.size());
-                CHUNK_CACHE.forEach((pos, data) -> fastCache.put(pos.pack(), data));
+                CHUNK_CACHE.forEach((pos, data) -> fastCache.put(ChunkPos.asLong(pos.x, pos.z), data));
                 FAST_CACHE = fastCache;
 
                 net.nostalgia.client.events.caches.providers.DimensionHologramProvider provider = UniversalHologramCache.getProvider(dimensionId);
@@ -149,7 +149,7 @@ public class AlphaByteCache {
         int targetChunkX = worldX >> 4;
         int targetChunkZ = worldZ >> 4;
         ChunkPos chunkPos = new ChunkPos(targetChunkX, targetChunkZ);
-        byte[] chunkData = FAST_CACHE.get(chunkPos.pack());
+        byte[] chunkData = FAST_CACHE.get(ChunkPos.asLong(chunkPos.x, chunkPos.z));
         if (chunkData != null) {
             int localX = worldX & 15;
             int localZ = worldZ & 15;
@@ -170,7 +170,7 @@ public class AlphaByteCache {
             int localZ = worldZ & 15;
             int index = (localX * 16 + localZ) * 128 + worldY;
             chunkData[index] = blockId;
-            FAST_CACHE.put(chunkPos.pack(), chunkData);
+            FAST_CACHE.put(ChunkPos.asLong(chunkPos.x, chunkPos.z), chunkData);
         }
     }
 
@@ -178,7 +178,7 @@ public class AlphaByteCache {
         int targetChunkX = worldX >> 4;
         int targetChunkZ = worldZ >> 4;
         ChunkPos chunkPos = new ChunkPos(targetChunkX, targetChunkZ);
-        byte[] chunkData = FAST_CACHE.get(chunkPos.pack());
+        byte[] chunkData = FAST_CACHE.get(ChunkPos.asLong(chunkPos.x, chunkPos.z));
         if (chunkData != null) {
             int localX = worldX & 15;
             int localZ = worldZ & 15;
