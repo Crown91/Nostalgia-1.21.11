@@ -105,7 +105,7 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          CLASSES="net.minecraft.client.Camera net.minecraft.client.multiplayer.ClientLevel net.minecraft.world.level.Level net.minecraft.client.renderer.GameRenderer net.minecraft.client.renderer.SubmitNodeCollector"
+          CLASSES="net.minecraft.client.renderer.OrderedSubmitNodeCollector net.minecraft.client.renderer.block.model.BlockStateModel net.minecraft.client.renderer.block.model.BlockModelPart net.minecraft.client.renderer.entity.EntityRenderer net.minecraft.server.MinecraftServer"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
