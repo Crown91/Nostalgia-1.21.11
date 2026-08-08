@@ -105,11 +105,14 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          CLASSES="net.minecraft.client.renderer.OrderedSubmitNodeCollector net.minecraft.client.renderer.block.model.BlockStateModel net.minecraft.client.renderer.block.model.BlockModelPart net.minecraft.client.renderer.entity.EntityRenderer net.minecraft.server.MinecraftServer"
+          CLASSES="net.minecraft.client.model.Model net.minecraft.client.renderer.rendertype.RenderTypes net.minecraft.server.level.ServerLevel net.minecraft.server.MinecraftServer net.minecraft.client.renderer.block.BlockRenderDispatcher"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
             for J in $ALL_JARS; do
+              # intermediary jars carry class_1234 / field_5678 names, which are
+              # useless as a porting reference - always prefer a mapped jar
+              case "$J" in *intermediary*) continue;; esac
               if unzip -l "$J" 2>/dev/null | grep -q "$P"; then
                 FOUND="$J"
                 break
@@ -118,7 +121,7 @@ jobs:
             echo "" >> "$OUT"
             echo "========== $C ==========" >> "$OUT"
             if [ -z "$FOUND" ]; then
-              echo "class not present in the searched jars" >> "$OUT"
+              echo "class not present in the searched non-intermediary jars" >> "$OUT"
             else
               echo "# from: $FOUND" >> "$OUT"
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
