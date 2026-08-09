@@ -31,7 +31,7 @@ public abstract class ParticleGroupTickFreezeMixin {
         }
         double x = acc.nostalgia$getX();
         double z = acc.nostalgia$getZ();
-        long chunkKey = ChunkPos.pack((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
+        long chunkKey = ChunkPos.asLong((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
         if (access.nostalgia$isChunkFrozen(level.dimension(), chunkKey)) {
             acc.nostalgia$setXo(x);
             acc.nostalgia$setYo(acc.nostalgia$getY());
