@@ -64,8 +64,8 @@ public class HologramDiskCache {
                     out.writeInt(MAGIC_ALPHA);
                     out.writeInt(cache.size());
                     for (Map.Entry<ChunkPos, byte[]> entry : cache.entrySet()) {
-                        out.writeInt(entry.getKey().x());
-                        out.writeInt(entry.getKey().z());
+                        out.writeInt(entry.getKey().x);
+                        out.writeInt(entry.getKey().z);
                         out.write(entry.getValue());
                     }
                 }
