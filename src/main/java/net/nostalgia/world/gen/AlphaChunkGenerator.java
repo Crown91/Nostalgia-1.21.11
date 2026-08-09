@@ -110,7 +110,7 @@ public class AlphaChunkGenerator extends ChunkGenerator {
         ChunkPos chunkPos = chunk.getPos();
         byte[] alphaBlocks = new byte[32768];
         
-        source.provideChunk(chunkPos.x(), chunkPos.z(), alphaBlocks);
+        source.provideChunk(chunkPos.x, chunkPos.z, alphaBlocks);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = 0; x < 16; x++) {
