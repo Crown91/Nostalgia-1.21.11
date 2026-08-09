@@ -77,10 +77,32 @@ dependencies {
 		logger.warn("SHA jar not found at ${shaJar} - build SHA-1.21.11 first and copy the jar there.")
 	}
 
-	// Optional local-only dependency from the original build.
-	def punchy = file("libs/punchy.jar")
-	if (punchy.exists()) {
-		modCompileOnly files(punchy)
+	// --- Punchy (first-person animations) --------------------------------
+	// Compile-only: Nostalgia mixes into punchy.client.* to make the charged
+	// amethyst animate like a trident. Punchy is NOT embedded and NOT required
+	// at runtime - it is a soft, optional integration.
+	//
+	// Drop the Punchy jar into ./libs/. ANY name matching punchy*.jar is picked
+	// up, so there is no need to rename the download; if several are present the
+	// last by name wins. Override with -Ppunchy_jar=/path/to.jar
+	def punchyJar = null
+	if (project.hasProperty('punchy_jar')) {
+		punchyJar = file(project.property('punchy_jar'))
+	} else {
+		def punchyCandidates = fileTree(dir: 'libs',
+				includes: ['punchy*.jar'],
+				excludes: ['*-sources.jar', '*-dev.jar', '*-sources-dev.jar']
+		).files.sort { it.name }
+		if (!punchyCandidates.isEmpty()) {
+			punchyJar = punchyCandidates.last()
+		}
+	}
+
+	if (punchyJar != null && punchyJar.exists()) {
+		logger.lifecycle("Punchy library found: ${punchyJar} - compiling punchy mixins against it.")
+		modCompileOnly files(punchyJar)
+	} else {
+		logger.warn("No libs/punchy*.jar found - the punchy.client.* mixins will NOT compile.")
 	}
 
 	// --- Zemlya (gravity library) ---------------------------------------
