@@ -22,7 +22,7 @@ public abstract class ParticleEngineAddMixin {
         ParticleAccessor acc = (ParticleAccessor) (Object) p;
         double px = acc.nostalgia$getX();
         double pz = acc.nostalgia$getZ();
-        long key = ChunkPos.pack((int) Math.floor(px) >> 4, (int) Math.floor(pz) >> 4);
+        long key = ChunkPos.asLong((int) Math.floor(px) >> 4, (int) Math.floor(pz) >> 4);
         if (access.nostalgia$isChunkFrozen(mc.level.dimension(), key)) {
             ci.cancel();
         }
