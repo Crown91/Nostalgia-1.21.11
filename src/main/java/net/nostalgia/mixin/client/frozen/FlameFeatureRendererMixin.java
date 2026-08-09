@@ -51,7 +51,7 @@ public class FlameFeatureRendererMixin {
         if (access == null || !access.nostalgia$hasRegions()) return sprite;
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return sprite;
-        long chunkKey = ChunkPos.pack((int) Math.floor(state.x) >> 4, (int) Math.floor(state.z) >> 4);
+        long chunkKey = ChunkPos.asLong((int) Math.floor(state.x) >> 4, (int) Math.floor(state.z) >> 4);
         if (access.nostalgia$isChunkFrozen(level.dimension(), chunkKey)) {
             TextureAtlasSprite frozen = FrozenSpriteRegistry.getFrozenFor(sprite);
             if (frozen != null) return frozen;
