@@ -34,7 +34,7 @@ public abstract class ClientLevelAnimateTickFreezeMixin {
         TickRateManagerAccess access = ClientFreezeRegions.access();
         if (access == null || !access.nostalgia$hasRegions()) return;
         ClientLevel self = (ClientLevel) (Object) this;
-        long key = ChunkPos.pack(pos.getX() >> 4, pos.getZ() >> 4);
+        long key = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
         if (access.nostalgia$isChunkFrozen(self.dimension(), key)) {
             ci.cancel();
         }
