@@ -35,7 +35,7 @@ public abstract class BlockRendererMixin {
         if (level == null) return;
         if (!(level.tickRateManager() instanceof TickRateManagerAccess access)) return;
         if (!access.nostalgia$hasRegions()) return;
-        long chunkKey = ChunkPos.pack(pos.getX() >> 4, pos.getZ() >> 4);
+        long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
         this.nostalgia$inZone = access.nostalgia$isChunkFrozen(level.dimension(), chunkKey);
     }
 
