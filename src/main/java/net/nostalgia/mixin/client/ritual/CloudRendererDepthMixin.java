@@ -1,8 +1,7 @@
 package net.nostalgia.mixin.client.ritual;
 
-import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.platform.DepthTestFunction;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -32,15 +31,21 @@ public class CloudRendererDepthMixin {
                 snippetField.setAccessible(true);
                 RenderPipeline.Snippet snippet = (RenderPipeline.Snippet) snippetField.get(null);
 
+                // 26.1 expressed this as a single DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false).
+                // 1.21.11 splits the same two settings into separate builder calls:
+                // the compare op became DepthTestFunction.LEQUAL_DEPTH_TEST and the
+                // depth-write flag became withDepthWrite(false).
                 nostalgia$noDepthClouds = RenderPipeline.builder(snippet)
                         .withLocation("pipeline/clouds_no_depth")
-                        .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+                        .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+                        .withDepthWrite(false)
                         .build();
 
                 nostalgia$noDepthFlatClouds = RenderPipeline.builder(snippet)
                         .withLocation("pipeline/flat_clouds_no_depth")
                         .withCull(false)
-                        .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+                        .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+                        .withDepthWrite(false)
                         .build();
             } catch (Exception e) {
                 e.printStackTrace();
