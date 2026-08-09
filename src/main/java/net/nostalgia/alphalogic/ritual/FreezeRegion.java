@@ -20,7 +20,7 @@ public record FreezeRegion(ResourceKey<Level> dimension, BlockPos beaconPos, int
         if (!dimension.equals(dim)) return false;
         int bx = beaconPos.getX() >> 4;
         int bz = beaconPos.getZ() >> 4;
-        return Math.max(Math.abs(chunkPos.x() - bx), Math.abs(chunkPos.z() - bz)) <= chunkRadius;
+        return Math.max(Math.abs(chunkPos.x - bx), Math.abs(chunkPos.z - bz)) <= chunkRadius;
     }
 
     public boolean containsBlock(ResourceKey<Level> dim, BlockPos pos) {
