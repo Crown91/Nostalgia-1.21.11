@@ -27,7 +27,7 @@ public abstract class SingleQuadParticleExtractMixin implements ParticleAccessor
         if (level == null) return partialTickTime;
         double x = this.nostalgia$getX();
         double z = this.nostalgia$getZ();
-        long chunkKey = ChunkPos.pack(((int) Math.floor(x)) >> 4, ((int) Math.floor(z)) >> 4);
+        long chunkKey = ChunkPos.asLong(((int) Math.floor(x)) >> 4, ((int) Math.floor(z)) >> 4);
         if (access.nostalgia$isChunkFrozen(level.dimension(), chunkKey)) {
             return 1.0F;
         }
