@@ -20,9 +20,22 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        // Punchy is an optional client-side mod; its mixins target classes that
+        // simply do not exist when the player has not installed it.
         if (mixinClassName.startsWith("net.nostalgia.mixin.client.punchy.")) {
             return FabricLoader.getInstance().isModLoaded("punchy");
         }
+
+        // Same story for Sodium. These mixins reach into Sodium internals, so
+        // without Sodium present the target classes are missing and the game
+        // would hard-crash instead of quietly running without them.
+        if (mixinClassName.startsWith("net.nostalgia.mixin.client.frozen.sodium.")
+                || mixinClassName.equals("net.nostalgia.mixin.alpha.AlphaSodiumWaterMixin")
+                || mixinClassName.equals("net.nostalgia.mixin.alpha.AlphaSodiumLightMixin")
+                || mixinClassName.equals("net.nostalgia.mixin.rd132211.RdSodiumAOMixin")) {
+            return FabricLoader.getInstance().isModLoaded("sodium");
+        }
+
         return true;
     }
 
