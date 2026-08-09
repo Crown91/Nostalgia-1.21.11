@@ -95,7 +95,7 @@ jobs:
       - name: Dump real 1.21.11 API signatures
         if: always()
         continue-on-error: true
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           mkdir -p build-logs
           OUT=build-logs/api-dump.txt
@@ -105,7 +105,8 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          CLASSES="net.minecraft.client.model.Model net.minecraft.client.renderer.rendertype.RenderTypes net.minecraft.server.level.ServerLevel net.minecraft.server.MinecraftServer net.minecraft.client.renderer.block.BlockRenderDispatcher"
+          # Round 2 of the dump: every class below is an OPEN QUESTION in the port.
+          CLASSES="net.minecraft.world.level.pathfinder.PathType net.minecraft.world.entity.Entity net.minecraft.world.level.dimension.DimensionType net.minecraft.server.level.ServerPlayer net.minecraft.client.multiplayer.ClientLevel"
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -127,6 +128,31 @@ jobs:
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
             fi
           done
+          # A class that was RENAMED cannot be dumped by its old name, so also
+          # search the mapped Minecraft jar's class list for likely new names.
+          MCJAR=""
+          for J in $ALL_JARS; do
+            case "$J" in *intermediary*) continue;; esac
+            if unzip -l "$J" 2>/dev/null | grep -q 'net/minecraft/world/level/Level\.class'; then
+              MCJAR="$J"
+              break
+            fi
+          done
+          echo "" >> "$OUT"
+          echo "========== class-name search ==========" >> "$OUT"
+          if [ -z "$MCJAR" ]; then
+            echo "minecraft jar not identified" >> "$OUT"
+          else
+            echo "# minecraft jar: $MCJAR" >> "$OUT"
+            unzip -l "$MCJAR" 2>/dev/null | awk '{print $NF}' | grep -E 'Lighting|LightCoords|LightUtil|Brightness|LightLayer|EntityTag' >> "$OUT" 2>&1 || echo "no matches" >> "$OUT"
+          fi
+          # Fabric side: the entity-level-change event class was renamed or moved.
+          echo "" >> "$OUT"
+          echo "========== fabric entity event classes ==========" >> "$OUT"
+          for J in $FABRIC_JARS; do
+            unzip -l "$J" 2>/dev/null | awk '{print $NF}' | grep -E 'entity/event/v1/.*\.class' | sed "s#^#$(basename $J): #" >> "$OUT" 2>&1 || true
+          done
+          sort -u -o "$OUT" "$OUT" 2>/dev/null || true
           echo "api dump complete"
 
       - name: Collect logs and reports
