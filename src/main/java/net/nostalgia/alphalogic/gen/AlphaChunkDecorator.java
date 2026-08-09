@@ -51,8 +51,8 @@ public class AlphaChunkDecorator {
             }
         }
 
-        int chunkX = cp.x();
-        int chunkZ = cp.z();
+        int chunkX = cp.x;
+        int chunkZ = cp.z;
         int startX = chunkX * 16;
         int startZ = chunkZ * 16;
         
