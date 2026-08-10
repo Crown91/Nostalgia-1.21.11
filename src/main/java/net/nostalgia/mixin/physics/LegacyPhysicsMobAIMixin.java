@@ -21,7 +21,7 @@ public abstract class LegacyPhysicsMobAIMixin {
     private void injectAlphaAI(CallbackInfo ci) {
         Mob self = (Mob)(Object)this;
         if (self.level() instanceof net.minecraft.server.level.ServerLevel && self.level().dimension().equals(net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY)) {
-            if (!self.entityTags().contains("alpha_ai_set")) {
+            if (!self.getTags().contains("alpha_ai_set")) {
 
                 this.goalSelector.removeAllGoals(goal -> {
                     String name = goal.getClass().getSimpleName();
@@ -33,11 +33,11 @@ public abstract class LegacyPhysicsMobAIMixin {
                            !name.contains("Slime");
                 });
 
-                this.setPathfindingMalus(PathType.FIRE_IN_NEIGHBOR, 0.0F);
-                this.setPathfindingMalus(PathType.FIRE, 0.0F);
+                this.setPathfindingMalus(PathType.DANGER_FIRE, 0.0F);
+                this.setPathfindingMalus(PathType.DAMAGE_FIRE, 0.0F);
                 this.setPathfindingMalus(PathType.LAVA, 0.0F);
-                this.setPathfindingMalus(PathType.DAMAGING_IN_NEIGHBOR, 0.0F);
-                this.setPathfindingMalus(PathType.DAMAGING, 0.0F);
+                this.setPathfindingMalus(PathType.DANGER_OTHER, 0.0F);
+                this.setPathfindingMalus(PathType.DAMAGE_OTHER, 0.0F);
 
                 self.addTag("alpha_ai_set");
             }
