@@ -105,8 +105,9 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 2 of the dump: every class below is an OPEN QUESTION in the port.
-          CLASSES="net.minecraft.world.level.pathfinder.PathType net.minecraft.world.entity.Entity net.minecraft.world.level.dimension.DimensionType net.minecraft.server.level.ServerPlayer net.minecraft.client.multiplayer.ClientLevel"
+          # Round 3. Single quotes are REQUIRED: the nested class below contains a
+          # dollar sign, which the shell would otherwise expand to nothing.
+          CLASSES='net.minecraft.world.level.dimension.DimensionType$CardinalLightType net.minecraft.util.Brightness net.minecraft.client.renderer.LightTexture net.minecraft.client.multiplayer.ClientLevel net.minecraft.world.entity.player.Player net.minecraft.server.level.ServerPlayer net.minecraft.client.gui.Gui'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -144,15 +145,10 @@ jobs:
             echo "minecraft jar not identified" >> "$OUT"
           else
             echo "# minecraft jar: $MCJAR" >> "$OUT"
-            unzip -l "$MCJAR" 2>/dev/null | awk '{print $NF}' | grep -E 'Lighting|LightCoords|LightUtil|Brightness|LightLayer|EntityTag' >> "$OUT" 2>&1 || echo "no matches" >> "$OUT"
+            unzip -l "$MCJAR" 2>/dev/null | awk '{print $NF}' | grep -E 'Lighting|LightCoords|LightUtil|Brightness|LightLayer|LightTexture' >> "$OUT" 2>&1 || echo "no matches" >> "$OUT"
           fi
-          # Fabric side: the entity-level-change event class was renamed or moved.
-          echo "" >> "$OUT"
-          echo "========== fabric entity event classes ==========" >> "$OUT"
-          for J in $FABRIC_JARS; do
-            unzip -l "$J" 2>/dev/null | awk '{print $NF}' | grep -E 'entity/event/v1/.*\.class' | sed "s#^#$(basename $J): #" >> "$OUT" 2>&1 || true
-          done
-          sort -u -o "$OUT" "$OUT" 2>/dev/null || true
+          # NOTE: never sort this file. The sections above are only readable in
+          # the order they were written; sorting interleaves unrelated classes.
           echo "api dump complete"
 
       - name: Collect logs and reports
