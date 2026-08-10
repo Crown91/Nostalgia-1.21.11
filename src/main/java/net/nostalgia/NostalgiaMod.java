@@ -1,7 +1,7 @@
 package net.nostalgia;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityLevelChangeEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -205,7 +205,7 @@ public class NostalgiaMod implements ModInitializer {
             net.nostalgia.alphalogic.ritual.EchoRitualManager.clearStateOnServerStop();
         });
 
-        ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, origin, destination) -> {
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             if (net.nostalgia.alphalogic.ritual.TimestopZoneManager.hasActiveZone()) {
                 net.nostalgia.alphalogic.ritual.TimestopZoneManager.sendZoneToPlayer(player);
             }
@@ -244,14 +244,14 @@ public class NostalgiaMod implements ModInitializer {
 
     private static net.minecraft.world.InteractionResult handleHologramClick(net.minecraft.world.entity.player.Player player, net.minecraft.world.level.Level world, net.minecraft.world.entity.Entity entity) {
         if (!world.isClientSide() && entity instanceof net.minecraft.world.entity.Interaction interaction && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
-            if (interaction.entityTags().contains("nostalgia_matrix_alpha")) {
+            if (interaction.getTags().contains("nostalgia_matrix_alpha")) {
                 net.minecraft.server.level.ServerLevel alphaLevel = world.getServer().getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, Identifier.fromNamespaceAndPath("nostalgia", "alpha_112_01")));
                 if (alphaLevel != null) {
                     endRitualForPlayer(serverPlayer);
                     TeleportCommand.teleportToAlpha(serverPlayer, alphaLevel);
                 }
                 return net.minecraft.world.InteractionResult.SUCCESS;
-            } else if (interaction.entityTags().contains("nostalgia_matrix_rd")) {
+            } else if (interaction.getTags().contains("nostalgia_matrix_rd")) {
                 net.minecraft.server.level.ServerLevel rdLevel = world.getServer().getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, Identifier.fromNamespaceAndPath("nostalgia", "rd_132211")));
                 if (rdLevel != null) {
                     endRitualForPlayer(serverPlayer);
