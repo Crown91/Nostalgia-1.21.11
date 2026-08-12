@@ -14,8 +14,16 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(SingleQuadParticle.class)
 public abstract class SingleQuadParticleExtractMixin implements ParticleAccessor {
 
+    // PORT 26.1.2 -> 1.21.11: the descriptor pointed at
+    //   net/minecraft/client/renderer/state/level/QuadParticleRenderState
+    // but in 1.21.11 the class lives one package up, without the 'level'
+    // segment. Verified against javap:
+    //   public void extract(net.minecraft.client.renderer.state.QuadParticleRenderState,
+    //                       net.minecraft.client.Camera, float)
+    // A wrong descriptor is invisible to javac (the import resolved fine, only
+    // the string was stale), so this injector silently never applied.
     @ModifyVariable(
-            method = "extract(Lnet/minecraft/client/renderer/state/level/QuadParticleRenderState;Lnet/minecraft/client/Camera;F)V",
+            method = "extract(Lnet/minecraft/client/renderer/state/QuadParticleRenderState;Lnet/minecraft/client/Camera;F)V",
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0
