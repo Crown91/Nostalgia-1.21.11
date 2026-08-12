@@ -10,17 +10,20 @@ import punchy.client.render.ToolKindResolver;
 import punchy.client.renderer.layer.PlayerArmModelLayer;
 import punchy.client.renderer.layer.VanillaFirstPersonItemLayer;
 
+// Punchy is a mod, not Minecraft, so its names are never obfuscated: remap = false.
 @Mixin(value = ToolKindResolver.class, remap = false)
 public class ToolKindResolverMixin {
 
-    @Inject(method = "resolveItemKindWithoutOverrides", at = @At("HEAD"), cancellable = true)
+    // The bundled Punchy exposes resolveItemKind / resolveArmKind only; the
+    // "...WithoutOverrides" name this port used at first does not exist there.
+    @Inject(method = "resolveItemKind", at = @At("HEAD"), cancellable = true, remap = false)
     private static void nostalgia$amethystIsTrident(ItemStack stack, VanillaFirstPersonItemLayer.ToolKind fallback, CallbackInfoReturnable<VanillaFirstPersonItemLayer.ToolKind> cir) {
         if (stack != null && stack.is(Items.AMETHYST_SHARD)) {
             cir.setReturnValue(VanillaFirstPersonItemLayer.ToolKind.TRIDENT);
         }
     }
 
-    @Inject(method = "resolveArmKind", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "resolveArmKind", at = @At("HEAD"), cancellable = true, remap = false)
     private static void nostalgia$amethystIsTridentArm(ItemStack stack, PlayerArmModelLayer.ToolKind fallback, CallbackInfoReturnable<PlayerArmModelLayer.ToolKind> cir) {
         if (stack != null && stack.is(Items.AMETHYST_SHARD)) {
             cir.setReturnValue(PlayerArmModelLayer.ToolKind.TRIDENT);
