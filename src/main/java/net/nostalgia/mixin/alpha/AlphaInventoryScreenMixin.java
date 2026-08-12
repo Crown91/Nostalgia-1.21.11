@@ -13,8 +13,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(InventoryScreen.class)
 public abstract class AlphaInventoryScreenMixin {
 
-    @Inject(method = "renderBackground", at = @At("TAIL"))
-    private void hideOffhandVisuals(GuiGraphics graphics, int mouseX, int mouseY, float a, CallbackInfo ci) {
+    // 26.1 drew the container texture in renderBackground; in 1.21.11 the
+    // screen-specific background is renderBg(GuiGraphics, float, int, int)
+    // (partialTick comes first now). Injecting at TAIL keeps the alpha patch
+    // painted over the offhand slot exactly as before.
+    @Inject(method = "renderBg", at = @At("TAIL"))
+    private void hideOffhandVisuals(GuiGraphics graphics, float partialTick, int mouseX, int mouseY, CallbackInfo ci) {
         Minecraft client = Minecraft.getInstance();
         if (client.level != null && client.level.dimension() == ModDimensions.ALPHA_112_01_LEVEL_KEY) {
             AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) (Object) this;

@@ -46,7 +46,10 @@ public abstract class AlphaHudElementsMixin {
         return isAlphaMode() ? yLineAir + 10 + 7 : yLineAir;
     }
 
-    @Redirect(method = { "renderCrosshair", "renderHotbar" }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;"))
+    // 1.21.11 renamed Gui#renderHotbar to Gui#renderItemHotbar; the attack
+    // indicator option is still read inside it, so the redirect target only
+    // needed the new name (confirmed against the javap dump of Gui).
+    @Redirect(method = { "renderCrosshair", "renderItemHotbar" }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;"))
     private Object redirectAttackIndicatorGet(OptionInstance<?> instance) {
         if (isAlphaMode()) {
             Object val = instance.get();
