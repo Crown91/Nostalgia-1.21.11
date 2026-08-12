@@ -32,18 +32,22 @@ public class ModDimensions {
             Identifier.fromNamespaceAndPath(NostalgiaMod.MOD_ID, "alpha_112_01"));
 
     public static void bootstrapType(BootstrapContext<DimensionType> context) {
+        // PORT 1.21.11: record components are (hasFixedTime, hasSkyLight, hasCeiling,
+        // coordinateScale, minY, height, logicalHeight, infiniburn, ambientLight,
+        // monsterSettings, skybox, cardinalLightType, attributes, timelines).
+        // The 26.1 fourth boolean and the trailing Optional<Holder<WorldClock>> are gone.
         context.register(RD_132211_DIM_TYPE, new DimensionType(
-                false, true, false, false, 1.0, 0, 256, 256,
+                false, true, false, 1.0, 0, 256, 256,
                 BlockTags.INFINIBURN_OVERWORLD, 1.0f,
                 new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
                 DimensionType.Skybox.OVERWORLD,
                 DimensionType.CardinalLightType.DEFAULT,
                 net.minecraft.world.attribute.EnvironmentAttributeMap.EMPTY,
-                HolderSet.empty(), java.util.Optional.empty()
+                HolderSet.empty()
         ));
 
         context.register(ALPHA_112_01_DIM_TYPE, new DimensionType(
-                false, true, false, false, 1.0, 0, 128, 128,
+                false, true, false, 1.0, 0, 128, 128,
                 BlockTags.INFINIBURN_OVERWORLD, 0.0f,
                 new DimensionType.MonsterSettings(ConstantInt.of(0), 15),
                 DimensionType.Skybox.OVERWORLD,
@@ -54,7 +58,7 @@ public class ModDimensions {
                         .set(EnvironmentAttributes.CLOUD_HEIGHT, 108.0f)
                         .set(EnvironmentAttributes.CLOUD_COLOR, 0xFFFFFFFF)
                         .build(),
-                HolderSet.empty(), java.util.Optional.empty() // PORT: WorldClock registry not available in 1.21.11
+                HolderSet.empty()
         ));
     }
 
