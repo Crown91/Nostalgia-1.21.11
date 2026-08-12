@@ -32,8 +32,8 @@ public class AlphaChunkPopulator {
         }
 
         ChunkPos chunkPos = chunk.getPos();
-        int chunkX = chunkPos.x();
-        int chunkZ = chunkPos.z();
+        int chunkX = chunkPos.x;
+        int chunkZ = chunkPos.z;
         int startX = chunkX * 16;
         int startZ = chunkZ * 16;
         
