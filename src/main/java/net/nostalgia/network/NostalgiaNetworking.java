@@ -104,7 +104,7 @@ public class NostalgiaNetworking {
                             }
                             net.nostalgia.alphalogic.ritual.ServerChunkTracker tracker = net.nostalgia.alphalogic.ritual.ServerChunkTracker.get(targetLevel);
                             for (net.minecraft.world.level.ChunkPos pos : allChunks) {
-                                long key = pos.pack();
+                                long key = net.minecraft.world.level.ChunkPos.asLong(pos.x, pos.z);
                                 long serverVer = tracker.getVersion(key);
                                 long clientVer = clientVersions.getOrDefault(key, -1L);
                                 if (serverVer > clientVer) {
