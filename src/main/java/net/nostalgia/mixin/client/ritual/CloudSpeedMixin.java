@@ -13,8 +13,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(CloudRenderer.class)
 public class CloudSpeedMixin {
 
+    // PORT 26.1.2 -> 1.21.11: CloudRenderer.render dropped its 'int range'
+    // parameter, so the old descriptor
+    //   (ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V
+    // no longer matches anything and every injector here silently did nothing.
+    // Verified against javap:
+    //   public void render(int, CloudStatus, float, Vec3, long, float)
+    //
+    // Argument ordinals after the change:
+    //   int   -> ordinal 0 = color        (was 0 = color, 1 = range)
+    //   float -> ordinal 0 = bottomY, 1 = partialTicks (unchanged)
+    //   long  -> ordinal 0 = gameTime                  (unchanged)
+
     @ModifyVariable(
-        method = "render(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V",
+        method = "render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;JF)V",
         at = @At("HEAD"),
         ordinal = 0,
         argsOnly = true
@@ -36,11 +48,11 @@ public class CloudSpeedMixin {
     }
 
     @Inject(
-        method = "render(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V",
+        method = "render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;JF)V",
         at = @At("HEAD"),
         cancellable = true
     )
-    private void nostalgia$cancelFullyFadedClouds(int color, CloudStatus cloudStatus, float bottomY, int range, Vec3 cameraPosition, long gameTime, float partialTicks, CallbackInfo ci) {
+    private void nostalgia$cancelFullyFadedClouds(int color, CloudStatus cloudStatus, float bottomY, Vec3 cameraPosition, long gameTime, float partialTicks, CallbackInfo ci) {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.dimension() == net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY) {
@@ -51,7 +63,7 @@ public class CloudSpeedMixin {
     }
 
     @ModifyVariable(
-        method = "render(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V",
+        method = "render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;JF)V",
         at = @At("HEAD"),
         ordinal = 0,
         argsOnly = true
@@ -69,7 +81,7 @@ public class CloudSpeedMixin {
     }
 
     @ModifyVariable(
-        method = "render(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V",
+        method = "render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;JF)V",
         at = @At("HEAD"),
         ordinal = 1,
         argsOnly = true
