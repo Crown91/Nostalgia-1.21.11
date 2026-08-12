@@ -477,7 +477,7 @@ public class AlphaBlocks {
                         .create(net.minecraft.core.registries.Registries.BLOCK,
                                         Identifier.fromNamespaceAndPath("nostalgia", "alpha_farmland"));
         public static final Block ALPHA_FARMLAND = registerBlock("alpha_farmland",
-                        new net.minecraft.world.level.block.FarmlandBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.FARMLAND).setId(ALPHA_FARMLAND_KEY)) {},
+                        new net.minecraft.world.level.block.FarmBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.FARMLAND).setId(ALPHA_FARMLAND_KEY)) {},
                         ALPHA_FARMLAND_KEY);
 
         public static final net.minecraft.resources.ResourceKey<Block> ALPHA_WHEAT_CROP_KEY = net.minecraft.resources.ResourceKey
