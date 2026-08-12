@@ -13,6 +13,14 @@ base {
 repositories {
 	mavenLocal()
 	mavenCentral()
+	// Turns ./libs/<name>-<version>.jar into a real module component, which is
+	// what Loom's jar-in-jar (include) requires. Raw file dependencies fail with
+	// "is not a module component and has no capabilities".
+	flatDir {
+		name = 'localLibs'
+		dirs "${projectDir}/libs"
+	}
+	mavenCentral()
 	maven { url 'https://maven.wispforest.io/releases' }
 	maven { url 'https://jitpack.io/' }
 	maven {
@@ -66,6 +74,8 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	// Sodium from Modrinth instead of a hardcoded local Windows path.
+	// The original 26.1.2 build pinned 0.8.9+mc26.1.1; this port needs 0.8.12+
+	// for 1.21.11 (see gradle.properties: sodium_version).
 	modCompileOnly "maven.modrinth:sodium:${project.sodium_version}"
 
 	// SHA (Sodium Hologram API): build the ported SHA-1.21.11 project and copy its
@@ -111,8 +121,9 @@ dependencies {
 	// users only install one file.
 	//
 	// Build Crown91/Zemlya-1.21.11 and copy build/libs/zemlya-<ver>.jar into
-	// ./libs/. ANY name matching zemlya*.jar is picked up, so there is no need
-	// to rename the file; if several are present the last by name wins.
+	// ./libs/. The file MUST be named <name>-<version>.jar so the flatDir
+	// repository above can expose it as a module component - Loom refuses to
+	// nest plain file dependencies.
 	// You can also point at an explicit file with -Pzemlya_jar=/path/to.jar
 	//
 	// Use the remapped release jar, NOT the -dev / -sources one.
@@ -130,10 +141,20 @@ dependencies {
 	}
 
 	if (zemlyaJar != null && zemlyaJar.exists()) {
-		logger.lifecycle("Zemlya library found: ${zemlyaJar} - it will be embedded via jar-in-jar.")
-		modImplementation files(zemlyaJar)
-		// jar-in-jar: nests the Zemlya jar inside the produced Nostalgia jar
-		include files(zemlyaJar)
+		def zemlyaMatcher = (zemlyaJar.name =~ /^(.+?)-([0-9][^-]*)\.jar$/)
+		if (zemlyaMatcher.matches()) {
+			def zemlyaName = zemlyaMatcher[0][1]
+			def zemlyaVersion = zemlyaMatcher[0][2]
+			logger.lifecycle("Zemlya library found: ${zemlyaJar} - embedding via jar-in-jar as libs:${zemlyaName}:${zemlyaVersion}.")
+			modImplementation "libs:${zemlyaName}:${zemlyaVersion}"
+			// jar-in-jar: nests the Zemlya jar inside the produced Nostalgia jar
+			include "libs:${zemlyaName}:${zemlyaVersion}"
+		} else {
+			logger.warn("Zemlya library found: ${zemlyaJar} - but it is not named <name>-<version>.jar, " +
+					"so it CANNOT be nested. Compiling against it without embedding; " +
+					"rename it to zemlya-1.0.0.jar to get jar-in-jar back.")
+			modImplementation files(zemlyaJar)
+		}
 	} else {
 		logger.warn("No libs/zemlya*.jar found - Zemlya will NOT be embedded. " +
 				"Build Crown91/Zemlya-1.21.11 and copy its jar into libs/.")
