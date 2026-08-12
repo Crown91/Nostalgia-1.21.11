@@ -23,8 +23,16 @@ public class CloudRendererDepthMixin {
     @Unique
     private RenderPipeline nostalgia$noDepthFlatClouds;
 
-    @Inject(method = "render", at = @At("HEAD"))
-    private void nostalgia$initPipelines(int color, CloudStatus cloudStatus, float bottomY, int range, net.minecraft.world.phys.Vec3 cameraPosition, long gameTime, float partialTicks, CallbackInfo ci) {
+    // PORT 26.1.2 -> 1.21.11: CloudRenderer.render lost its 'int range'
+    // parameter, verified against javap:
+    //   public void render(int, CloudStatus, float, Vec3, long, float)
+    // The descriptor is spelled out so a future signature change fails the
+    // build instead of silently not applying.
+    @Inject(
+            method = "render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;JF)V",
+            at = @At("HEAD")
+    )
+    private void nostalgia$initPipelines(int color, CloudStatus cloudStatus, float bottomY, net.minecraft.world.phys.Vec3 cameraPosition, long gameTime, float partialTicks, CallbackInfo ci) {
         if (nostalgia$noDepthClouds == null) {
             try {
                 Field snippetField = RenderPipelines.class.getDeclaredField("CLOUDS_SNIPPET");
@@ -53,7 +61,11 @@ public class CloudRendererDepthMixin {
         }
     }
 
-    @ModifyVariable(method = "render", at = @At("STORE"), ordinal = 0)
+    @ModifyVariable(
+            method = "render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;JF)V",
+            at = @At("STORE"),
+            ordinal = 0
+    )
     private RenderPipeline nostalgia$swapPipeline(RenderPipeline original) {
         if (ClientRitualEventRegistry.activeTransition() != null && nostalgia$noDepthClouds != null) {
             if (original == RenderPipelines.CLOUDS) {
