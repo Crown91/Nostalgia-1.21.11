@@ -37,7 +37,7 @@ public class ModDimensions {
                 BlockTags.INFINIBURN_OVERWORLD, 1.0f,
                 new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
                 DimensionType.Skybox.OVERWORLD,
-                net.minecraft.world.level.CardinalLighting.Type.DEFAULT,
+                DimensionType.CardinalLightType.DEFAULT,
                 net.minecraft.world.attribute.EnvironmentAttributeMap.EMPTY,
                 HolderSet.empty(), java.util.Optional.empty()
         ));
@@ -47,7 +47,7 @@ public class ModDimensions {
                 BlockTags.INFINIBURN_OVERWORLD, 0.0f,
                 new DimensionType.MonsterSettings(ConstantInt.of(0), 15),
                 DimensionType.Skybox.OVERWORLD,
-                net.minecraft.world.level.CardinalLighting.Type.DEFAULT,
+                DimensionType.CardinalLightType.DEFAULT,
                 EnvironmentAttributeMap.builder()
                         .set(EnvironmentAttributes.SKY_COLOR, 0xFF88BBFF)
                         .set(EnvironmentAttributes.FOG_COLOR, 0xFFEBEBFF)
