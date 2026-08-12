@@ -34,7 +34,13 @@
     "sha": "*",
     "zemlya": "*"
   },
+  "recommends": {
+    "sodium": ">=0.8.12"
+  },
   "suggests": {
-    "sodium": "*"
+    "punchy": "*"
+  },
+  "breaks": {
+    "sodium": "<0.8.12"
   }
 }
