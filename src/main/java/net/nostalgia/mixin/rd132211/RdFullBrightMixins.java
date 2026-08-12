@@ -8,7 +8,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
 import net.nostalgia.world.dimension.ModDimensions;
 import org.spongepowered.asm.mixin.Final;
@@ -19,16 +19,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// rd-132211 predates directional face shading: every face of every block was
+// drawn at full brightness. 26.1 expressed per-face brightness as a six-float
+// "cardinal lighting" object; 1.21.11 has no such type and asks the level for
+// one face at a time through getShade, so flat lighting is now a constant 1.0F.
 @Mixin(ClientLevel.class)
 abstract class RdFlatCardinalMixin {
-    private static final CardinalLighting FLAT =
-        new CardinalLighting(1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
 
-    @Inject(method = "cardinalLighting", at = @At("HEAD"), cancellable = true)
-    private void nostalgia$flatInRD(CallbackInfoReturnable<CardinalLighting> cir) {
+    @Inject(method = "getShade", at = @At("HEAD"), cancellable = true)
+    private void nostalgia$flatInRD(Direction direction, boolean shade, CallbackInfoReturnable<Float> cir) {
         ClientLevel self = (ClientLevel) (Object) this;
         if (self.dimension().equals(ModDimensions.RD_132211_LEVEL_KEY)) {
-            cir.setReturnValue(FLAT);
+            cir.setReturnValue(1.0F);
         }
     }
 }
@@ -50,7 +52,8 @@ abstract class RdFullBrightEntityMixin {
     @Inject(method = "getPackedLightCoords", at = @At("HEAD"), cancellable = true)
     private void nostalgia$fullBrightEntityInRD(Entity entity, float partialTickTime, CallbackInfoReturnable<Integer> cir) {
         if (entity.level().dimension().equals(ModDimensions.RD_132211_LEVEL_KEY)) {
-            cir.setReturnValue(LightCoordsUtil.pack(15, 15));
+            // identical to the old pack(15, 15): full sky light and full block light
+            cir.setReturnValue(LightTexture.FULL_BRIGHT);
         }
     }
 }
