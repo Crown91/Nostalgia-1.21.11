@@ -105,10 +105,11 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 4. DimensionType is a record: javap lists its fields in
-          # DECLARATION order, which is exactly the constructor argument order.
-          # That is the one thing the compiler error cannot tell us.
-          CLASSES='net.minecraft.world.level.dimension.DimensionType net.minecraft.world.level.block.FarmBlock net.minecraft.world.level.ChunkPos'
+          # Round 5. The code now COMPILES; what is left are mixin @Inject
+          # targets that no longer exist under these names, reported by Loom as
+          # "Cannot remap <method>". javap gives the real method names and
+          # descriptors, which is exactly what the injectors must reference.
+          CLASSES='net.minecraft.client.renderer.CloudRenderer net.minecraft.client.particle.SingleQuadParticle net.minecraft.world.level.chunk.LevelChunkSection net.minecraft.client.gui.Gui net.minecraft.client.gui.screens.inventory.InventoryScreen net.minecraft.client.gui.screens.LoadingOverlay'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
