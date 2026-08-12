@@ -95,7 +95,7 @@ jobs:
       - name: Dump real 1.21.11 API signatures
         if: always()
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           mkdir -p build-logs
           OUT=build-logs/api-dump.txt
@@ -105,11 +105,11 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 5. The code now COMPILES; what is left are mixin @Inject
-          # targets that no longer exist under these names, reported by Loom as
-          # "Cannot remap <method>". javap gives the real method names and
-          # descriptors, which is exactly what the injectors must reference.
-          CLASSES='net.minecraft.client.renderer.CloudRenderer net.minecraft.client.particle.SingleQuadParticle net.minecraft.world.level.chunk.LevelChunkSection net.minecraft.client.gui.Gui net.minecraft.client.gui.screens.inventory.InventoryScreen net.minecraft.client.gui.screens.LoadingOverlay'
+          # Round 6. The vanilla injection targets are fixed (Gui#renderItemHotbar,
+          # InventoryScreen#renderBg, LoadingOverlay#drawProgressBar). What is left
+          # are the two MOD targets - Sodium's LevelSlice and Punchy's
+          # ToolKindResolver - so this round dumps those instead of vanilla.
+          CLASSES='net.minecraft.client.gui.Gui net.minecraft.client.gui.screens.inventory.InventoryScreen net.minecraft.client.gui.screens.LoadingOverlay'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -131,6 +131,49 @@ jobs:
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
             fi
           done
+          # ---- mod classes: Sodium (0.8.12+) and Punchy (libs/punchy.jar) ----
+          # Mod names are never obfuscated, so a "Cannot remap" here means the
+          # method genuinely does not exist under that name in these versions.
+          MOD_JARS="$(find ~/.gradle/caches/modules-2 ~/.gradle/caches/fabric-loom -iname '*sodium*.jar' 2>/dev/null | head -40) $(ls libs/*.jar 2>/dev/null)"
+          echo "" >> "$OUT"
+          echo "########## MOD JARS ##########" >> "$OUT"
+          for J in $MOD_JARS; do echo "$J" >> "$OUT"; done
+          MOD_CLASSES='net.caffeinemc.mods.sodium.client.world.LevelSlice punchy.client.render.ToolKindResolver punchy.client.renderer.layer.VanillaFirstPersonItemLayer punchy.client.renderer.layer.PlayerArmModelLayer'
+          for C in $MOD_CLASSES; do
+            P=$(echo "$C" | tr '.' '/').class
+            FOUND=""
+            for J in $MOD_JARS; do
+              if unzip -l "$J" 2>/dev/null | grep -q "$P"; then
+                FOUND="$J"
+                break
+              fi
+            done
+            echo "" >> "$OUT"
+            echo "========== $C ==========" >> "$OUT"
+            if [ -z "$FOUND" ]; then
+              echo "class not present in the mod jars listed above" >> "$OUT"
+            else
+              echo "# from: $FOUND" >> "$OUT"
+              javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
+            fi
+          done
+          # Where did ambient occlusion move to inside Sodium? Dump every Sodium
+          # class whose signatures still mention it, so the injector can target
+          # the real owner instead of a guessed name.
+          SODIUM_JAR=$(echo $MOD_JARS | tr ' ' '\n' | grep -i sodium | head -1)
+          if [ -n "$SODIUM_JAR" ]; then
+            echo "" >> "$OUT"
+            echo "########## sodium classes mentioning AmbientOcclusion ##########" >> "$OUT"
+            echo "# jar: $SODIUM_JAR" >> "$OUT"
+            for CL in $(unzip -l "$SODIUM_JAR" 2>/dev/null | awk '{print $4}' | grep '^net/caffeinemc/.*\.class$' | grep -viE '\$[0-9]+\.class$' | head -400); do
+              CN=$(echo "${CL%.class}" | tr '/' '.')
+              if javap -p -cp "$SODIUM_JAR" "$CN" 2>/dev/null | grep -iq 'ambientocclusion'; then
+                echo "" >> "$OUT"
+                echo "===== $CN =====" >> "$OUT"
+                javap -p -cp "$SODIUM_JAR" "$CN" 2>&1 | grep -i 'class \|ambientocclusion' >> "$OUT"
+              fi
+            done
+          fi
           # NOTE: never sort this file. The sections above are only readable in
           # the order they were written, and record field order is the whole
           # point of this step.

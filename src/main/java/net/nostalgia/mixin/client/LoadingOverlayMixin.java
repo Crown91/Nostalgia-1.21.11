@@ -12,6 +12,7 @@ import net.nostalgia.client.NostalgiaConfig;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -25,8 +26,11 @@ public abstract class LoadingOverlayMixin {
     @Shadow @Final private boolean fadeIn;
     @Shadow private float currentProgress;
 
-    @Shadow
-    protected abstract void renderProgressBar(GuiGraphics graphics, int x0, int y0, int x1, int y1, float fade);
+    // 26.1 had a protected renderProgressBar; 1.21.11 renamed it to
+    // drawProgressBar AND made it private, so it cannot be @Shadow-ed as an
+    // abstract method. @Invoker generates the accessor instead.
+    @Invoker("drawProgressBar")
+    protected abstract void callDrawProgressBar(GuiGraphics graphics, int x0, int y0, int x1, int y1, float fade);
 
     private static final Identifier LEGACY_LOCATION = Identifier.fromNamespaceAndPath("nostalgia", "textures/gui/title/mojang_legacy.png");
     private static final Identifier BETA_LOCATION = Identifier.fromNamespaceAndPath("nostalgia", "textures/gui/title/mojang_beta.png");
@@ -114,7 +118,7 @@ public abstract class LoadingOverlayMixin {
                 }
                 if (state==0||state==1) {
                     int barY=(int)(height*0.8325);
-                    this.renderProgressBar(graphics,width/2-120,barY-5,width/2+120,barY+5,1.0F);
+                    this.callDrawProgressBar(graphics,width/2-120,barY-5,width/2+120,barY+5,1.0F);
                 }
             }
         }
