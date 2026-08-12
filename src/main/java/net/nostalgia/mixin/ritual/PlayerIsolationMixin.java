@@ -48,8 +48,10 @@ public class PlayerIsolationMixin {
         }
     }
 
+    // PORT NOTE: 1.21.11 signature is interactOn(Entity, InteractionHand) -> InteractionResult.
+    // The trailing Vec3 hit-location parameter exists only in 26.1.
     @Inject(method = "interactOn", at = @At("HEAD"), cancellable = true)
-    private void nostalgia$isolationInteractOn(Entity entityToInteractOn, InteractionHand hand, net.minecraft.world.phys.Vec3 location, CallbackInfoReturnable<InteractionResult> cir) {
+    private void nostalgia$isolationInteractOn(Entity entityToInteractOn, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         if (nostalgia$isIsolatedFrom(entityToInteractOn)) {
             cir.setReturnValue(InteractionResult.PASS);
         }
