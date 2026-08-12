@@ -1,6 +1,7 @@
 package net.nostalgia.mixin.dimension;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
@@ -26,7 +27,14 @@ public class BlockPlaceLimitMixin {
             int y = pos.getY();
             if (y < originalMinY || y >= originalMaxY) {
                 if (context.getPlayer() instanceof ServerPlayer sp) {
-                    sp.sendBuildLimitMessage(y >= originalMaxY, y >= originalMaxY ? originalMaxY - 1 : originalMinY);
+                    // 1.21.11 has no sendBuildLimitMessage helper; vanilla now
+                    // formats these two keys itself and puts them on the action bar
+                    boolean tooHigh = y >= originalMaxY;
+                    int limit = tooHigh ? originalMaxY - 1 : originalMinY;
+                    sp.displayClientMessage(
+                            Component.translatable(tooHigh ? "build.tooHigh" : "build.tooLow", limit)
+                                    .withStyle(net.minecraft.ChatFormatting.RED),
+                            true);
                 }
                 cir.setReturnValue(InteractionResult.FAIL);
             }
