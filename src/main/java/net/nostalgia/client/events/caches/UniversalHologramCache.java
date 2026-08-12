@@ -61,7 +61,7 @@ public class UniversalHologramCache implements net.sha.api.HologramProvider {
         int chunkX = worldX >> 4;
         int chunkZ = worldZ >> 4;
 
-        long chunkHash = net.minecraft.world.level.ChunkPos.pack(chunkX, chunkZ);
+        long chunkHash = net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ);
         byte[] chunkData = AlphaByteCache.FAST_CACHE.get(chunkHash);
 
         if (chunkData != null) {
@@ -449,7 +449,7 @@ public class UniversalHologramCache implements net.sha.api.HologramProvider {
                             if (cc.isClientGen) {
                                 int chunkX = tx >> 4;
                                 int chunkZ = tz >> 4;
-                                long chunkHash = net.minecraft.world.level.ChunkPos.pack(chunkX, chunkZ);
+                                long chunkHash = net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ);
                                 byte[] chunkData;
                                 if (chunkHash == lastCachedChunkHash) {
                                     chunkData = lastCachedAlphaData;
