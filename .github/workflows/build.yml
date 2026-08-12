@@ -105,9 +105,10 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 3. Single quotes are REQUIRED: the nested class below contains a
-          # dollar sign, which the shell would otherwise expand to nothing.
-          CLASSES='net.minecraft.world.level.dimension.DimensionType$CardinalLightType net.minecraft.util.Brightness net.minecraft.client.renderer.LightTexture net.minecraft.client.multiplayer.ClientLevel net.minecraft.world.entity.player.Player net.minecraft.server.level.ServerPlayer net.minecraft.client.gui.Gui'
+          # Round 4. DimensionType is a record: javap lists its fields in
+          # DECLARATION order, which is exactly the constructor argument order.
+          # That is the one thing the compiler error cannot tell us.
+          CLASSES='net.minecraft.world.level.dimension.DimensionType net.minecraft.world.level.block.FarmBlock net.minecraft.world.level.ChunkPos'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -129,26 +130,9 @@ jobs:
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
             fi
           done
-          # A class that was RENAMED cannot be dumped by its old name, so also
-          # search the mapped Minecraft jar's class list for likely new names.
-          MCJAR=""
-          for J in $ALL_JARS; do
-            case "$J" in *intermediary*) continue;; esac
-            if unzip -l "$J" 2>/dev/null | grep -q 'net/minecraft/world/level/Level\.class'; then
-              MCJAR="$J"
-              break
-            fi
-          done
-          echo "" >> "$OUT"
-          echo "========== class-name search ==========" >> "$OUT"
-          if [ -z "$MCJAR" ]; then
-            echo "minecraft jar not identified" >> "$OUT"
-          else
-            echo "# minecraft jar: $MCJAR" >> "$OUT"
-            unzip -l "$MCJAR" 2>/dev/null | awk '{print $NF}' | grep -E 'Lighting|LightCoords|LightUtil|Brightness|LightLayer|LightTexture' >> "$OUT" 2>&1 || echo "no matches" >> "$OUT"
-          fi
           # NOTE: never sort this file. The sections above are only readable in
-          # the order they were written; sorting interleaves unrelated classes.
+          # the order they were written, and record field order is the whole
+          # point of this step.
           echo "api dump complete"
 
       - name: Collect logs and reports
