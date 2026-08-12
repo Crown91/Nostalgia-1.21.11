@@ -97,7 +97,7 @@ public class TimestopZoneManager {
                 beaconPos.immutable(),
                 ZONE_RADIUS_CHUNKS,
                 level.getGameTime(),
-                level.getDefaultClockTime(),
+                level.getDayTime(),
                 level.getRainLevel(1.0f),
                 level.getThunderLevel(1.0f)
         );
