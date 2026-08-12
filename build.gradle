@@ -78,13 +78,45 @@ dependencies {
 	// for 1.21.11 (see gradle.properties: sodium_version).
 	modCompileOnly "maven.modrinth:sodium:${project.sodium_version}"
 
-	// SHA (Sodium Hologram API): build the ported SHA-1.21.11 project and copy its
-	// jar into ./libs/. Guarded so the build still configures when it is absent.
+	// --- SHA (Sodium Hologram API) ---------------------------------------
+	// SHA is a hard dependency: fabric.mod.json lists "sha" under depends, so it
+	// MUST be nested into the produced jar via jar-in-jar, exactly like Zemlya.
+	// A plain `modImplementation files(...)` compiles fine and then the loader
+	// refuses to start the game with "requires any version of mod sha".
+	//
+	// Build Crown91/SHA-1.21.11 and copy build/libs/sha-<ver>.jar into ./libs/.
+	// The file MUST be named <name>-<version>.jar so the flatDir repository can
+	// expose it as a module component. Override with -Psha_jar=/path/to.jar
 	def shaJar = file(project.sha_jar)
+	if (!shaJar.exists()) {
+		def shaCandidates = fileTree(dir: 'libs',
+				includes: ['sha*.jar'],
+				excludes: ['*-sources.jar', '*-dev.jar', '*-sources-dev.jar']
+		).files.sort { it.name }
+		if (!shaCandidates.isEmpty()) {
+			shaJar = shaCandidates.last()
+			logger.warn("sha_jar points at ${project.sha_jar} which does not exist - falling back to ${shaJar}.")
+		}
+	}
+
 	if (shaJar.exists()) {
-		modImplementation files(shaJar)
+		def shaMatcher = (shaJar.name =~ /^(.+?)-([0-9][^-]*)\.jar$/)
+		if (shaMatcher.matches()) {
+			def shaName = shaMatcher[0][1]
+			def shaVersion = shaMatcher[0][2]
+			logger.lifecycle("SHA library found: ${shaJar} - embedding via jar-in-jar as libs:${shaName}:${shaVersion}.")
+			modImplementation "libs:${shaName}:${shaVersion}"
+			// jar-in-jar: nests the SHA jar inside the produced Nostalgia jar
+			include "libs:${shaName}:${shaVersion}"
+		} else {
+			logger.warn("SHA library found: ${shaJar} - but it is not named <name>-<version>.jar, " +
+					"so it CANNOT be nested. Compiling against it without embedding; " +
+					"rename it to sha-1.0.7.jar to get jar-in-jar back.")
+			modImplementation files(shaJar)
+		}
 	} else {
-		logger.warn("SHA jar not found at ${shaJar} - build SHA-1.21.11 first and copy the jar there.")
+		logger.warn("SHA jar not found at ${project.sha_jar} - build SHA-1.21.11 first and copy the jar there. " +
+				"The produced jar will NOT contain SHA and the loader will refuse to start.")
 	}
 
 	// --- Punchy (first-person animations) --------------------------------
