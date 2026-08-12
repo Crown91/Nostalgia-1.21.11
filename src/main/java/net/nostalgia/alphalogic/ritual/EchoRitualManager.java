@@ -177,7 +177,7 @@ public class EchoRitualManager {
     public static void startRitual(ServerLevel level, BlockPos beaconPos) {
         if (RitualEventRegistry.findInstanceByBeacon(beaconPos) != null) return;
         if (TimestopZoneManager.findZoneByBeacon(beaconPos) != null) return;
-        level.getServer().setWeatherParameters(6000, 0, false, false);
+        level.setWeatherParameters(6000, 0, false, false);
         EchoRitualEventInstance newInst = RitualEventRegistry.startEvent(beaconPos, level);
         newInst.setState(State.TIME_STOPPING);
         newInst.setTimeStopStartTime(newInst.activeMs());
@@ -185,7 +185,7 @@ public class EchoRitualManager {
         TimestopZoneManager.addZone(level, beaconPos, false);
 
         long gameTime = level.getGameTime();
-        long clockTicks = level.getDefaultClockTime();
+        long clockTicks = level.getDayTime();
         float rain = level.getRainLevel(1.0f);
         float thunder = level.getThunderLevel(1.0f);
 
@@ -211,7 +211,7 @@ public class EchoRitualManager {
         }
         if (inst.state() != State.INACTIVE) return;
         level.getServer().tickRateManager().setFrozen(false);
-        level.getServer().setWeatherParameters(6000, 0, false, false);
+        level.setWeatherParameters(6000, 0, false, false);
         inst.setState(State.TIME_STOPPING);
         inst.setTimeStopStartTime(inst.activeMs());
     }
