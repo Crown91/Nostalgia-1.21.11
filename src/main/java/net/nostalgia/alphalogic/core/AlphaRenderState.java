@@ -19,7 +19,9 @@ public class AlphaRenderState {
         }
         
         if (Minecraft.getInstance().player != null) {
-            Minecraft.getInstance().player.sendOverlayMessage(Component.literal("Render distance: " + modeName));
+            // the boolean picks the action bar, which is where the old
+            // sendOverlayMessage always put its text
+            Minecraft.getInstance().player.displayClientMessage(Component.literal("Render distance: " + modeName), true);
         }
     }
     
