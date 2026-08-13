@@ -1,0 +1,91 @@
+# Pulls the vanilla client jar straight from Mojang and extracts its core
+# shaders. This exists because the mod overrides assets/minecraft/shaders/core/
+# lightmap.fsh, and that override MUST declare exactly the same std140 UBO
+# layout as the version being targeted. A copy taken from a different Minecraft
+# version compiles fine and silently reads the wrong bytes, which is what turned
+# the whole world black on 1.21.11.
+#
+# Run it from the Actions tab (workflow_dispatch) and download the
+# "vanilla-shaders" artifact.
+name: dump-vanilla-shaders
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Minecraft version to extract shaders from
+        required: false
+        default: '1.21.11'
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Resolve the client jar URL
+        id: resolve
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.event.inputs.version || '1.21.11' }}"
+          echo "target version: $VERSION"
+          curl -sSL -o manifest.json \
+            https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
+          META=$(jq -r --arg v "$VERSION" '.versions[] | select(.id == $v) | .url' manifest.json)
+          if [ -z "$META" ] || [ "$META" = "null" ]; then
+            echo "::error::version $VERSION is not in the Mojang manifest"
+            jq -r '.versions[0:15][].id' manifest.json
+            exit 1
+          fi
+          curl -sSL -o version.json "$META"
+          CLIENT=$(jq -r '.downloads.client.url' version.json)
+          echo "client jar: $CLIENT"
+          echo "client=$CLIENT" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download and extract the core shaders
+        run: |
+          set -euo pipefail
+          curl -sSL -o client.jar "${{ steps.resolve.outputs.client }}"
+          ls -la client.jar
+          mkdir -p vanilla-shaders
+          # Everything shader-shaped, so the include files that the core shaders
+          # pull in are captured too, not just the entry points.
+          unzip -o client.jar 'assets/minecraft/shaders/*' -d vanilla-shaders > /dev/null
+          echo '--- extracted files ---'
+          find vanilla-shaders -type f | sort
+
+      - name: Print the lightmap shader and its UBO layout
+        run: |
+          set -euo pipefail
+          F=vanilla-shaders/assets/minecraft/shaders/core/lightmap.fsh
+          {
+            echo "### vanilla lightmap.fsh (${{ steps.resolve.outputs.version }})"
+            echo ""
+            if [ -f "$F" ]; then
+              echo '```glsl'
+              cat "$F"
+              echo '```'
+            else
+              echo "lightmap.fsh was NOT found at that path. Full shader listing:"
+              echo '```'
+              find vanilla-shaders -type f | sort
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Also surface every uniform block declaration in one place, since the
+          # field ORDER inside them is what actually has to be matched.
+          {
+            echo ""
+            echo "### all uniform blocks in core shaders"
+            echo '```'
+            grep -rn -A 20 'layout(std140)' vanilla-shaders/assets/minecraft/shaders/ || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the shaders
+        uses: actions/upload-artifact@v4
+        with:
+          name: vanilla-shaders
+          path: vanilla-shaders/
+          if-no-files-found: error
+          retention-days: 30
