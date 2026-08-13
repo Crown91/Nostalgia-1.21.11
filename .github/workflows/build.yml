@@ -153,12 +153,17 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 8. The lightmap classes are here because the mod overrides the
-          # VANILLA lightmap.fsh and has to feed it through these objects. Field
-          # ORDER inside the render state mirrors the shader's std140 block, and a
-          # single inserted field silently blacks out the world, so the exact
-          # member list has to be read rather than guessed.
-          CLASSES='net.minecraft.client.renderer.LevelRenderer net.minecraft.client.Camera net.minecraft.client.renderer.LightTexture net.minecraft.client.renderer.state.LightmapRenderState net.minecraft.client.renderer.state.LightmapRenderStateExtractor net.minecraft.world.attribute.EnvironmentAttributes net.minecraft.world.attribute.EnvironmentAttributeProbe net.minecraft.world.attribute.EnvironmentAttributeMap net.minecraft.world.level.dimension.DimensionType'
+          # Round 9. Two feature groups are being un-stubbed from this dump:
+          #  - the lightmap classes, because the mod overrides the VANILLA
+          #    lightmap.fsh and has to feed values through them. Field ORDER
+          #    mirrors the shader's std140 block and one inserted field silently
+          #    blacks out the world, so the member list must be read, not guessed.
+          #  - the clock classes, because the ritual dimension transition rewinds
+          #    the visual day/night cycle through the client clock. The port note
+          #    on ClientClockManagerFreezeMixin claims these are 26.1-only, which
+          #    is already known to be wrong for WorldClock: ModDimensions compiles
+          #    against WorldClocks.OVERWORLD today.
+          CLASSES='net.minecraft.client.renderer.LevelRenderer net.minecraft.client.Camera net.minecraft.client.renderer.LightTexture net.minecraft.client.renderer.state.LightmapRenderState net.minecraft.client.renderer.state.LightmapRenderStateExtractor net.minecraft.world.attribute.EnvironmentAttributes net.minecraft.world.attribute.EnvironmentAttributeProbe net.minecraft.world.attribute.EnvironmentAttributeMap net.minecraft.world.level.dimension.DimensionType net.minecraft.client.ClientClockManager net.minecraft.world.clock.WorldClock net.minecraft.world.clock.WorldClocks net.minecraft.client.multiplayer.ClientLevel'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -193,10 +198,10 @@ jobs:
           done
           if [ -n "$MC_JAR" ]; then
             echo "" >> "$OUT"
-            echo "########## classes matching Lightmap / LightTexture / EnvironmentAttribute ##########" >> "$OUT"
+            echo "########## classes matching Lightmap / LightTexture / EnvironmentAttribute / Clock ##########" >> "$OUT"
             echo "# jar: $MC_JAR" >> "$OUT"
             unzip -l "$MC_JAR" 2>/dev/null | awk '{print $4}' \
-              | grep -E 'Lightmap|LightTexture|EnvironmentAttribute' \
+              | grep -E 'Lightmap|LightTexture|EnvironmentAttribute|Clock' \
               | grep '\.class$' >> "$OUT" || true
           fi
           # ---- mod classes: Sodium (0.8.12+) and Punchy (libs/punchy.jar) ----
