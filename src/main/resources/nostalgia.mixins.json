@@ -143,6 +143,7 @@
     "client.ritual.ClientLevelChunkSectionMixin",
     "client.ritual.DefaultShaderInterfaceMixin",
     "client.ritual.ShaderLoaderMixin",
+    "client.ritual.ClientClockManagerFreezeMixin",
     "client.frozen.SpriteContentsAccessor",
     "client.frozen.SpriteLoaderAccessor",
     "client.frozen.SpriteLoaderMixin",
