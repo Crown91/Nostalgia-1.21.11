@@ -6,13 +6,13 @@ import com.mojang.blaze3d.framegraph.FramePass;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.ResourceHandle;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.BlockOutlineRenderState;
-import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -36,8 +36,10 @@ public abstract class LevelRendererMixin {
     @Shadow
     private LevelTargetBundle targets;
 
+    // PORT NOTE: 1.21.11 signature is addSkyPass(FrameGraphBuilder, Camera, GpuBufferSlice).
+    // 26.1 passes a CameraRenderState here instead.
     @Inject(method = "addSkyPass", at = @At("HEAD"), cancellable = true)
-    private void onAddSkyPass(FrameGraphBuilder $$0, CameraRenderState $$1, GpuBufferSlice $$2, CallbackInfo ci) {
+    private void onAddSkyPass(FrameGraphBuilder $$0, Camera $$1, GpuBufferSlice $$2, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.dimension().equals(ModDimensions.RD_132211_LEVEL_KEY)) {
             FramePass $$6 = $$0.addPass("sky_rd132211");
