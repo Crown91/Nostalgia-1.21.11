@@ -62,6 +62,12 @@ sourceSets {
 			]
 		}
 	}
+
+	// Build-time only tooling: the mixin descriptor validator. Never remapped,
+	// never shipped, not part of the mod - see the validateMixinDescriptors task
+	// at the bottom of this file.
+	mixinCheck {
+	}
 }
 
 dependencies {
@@ -200,6 +206,10 @@ dependencies {
 			compileOnly files(zemlyaClient)
 		}
 	}
+
+	// The validator reads class files directly, so ASM is all it needs.
+	mixinCheckImplementation 'org.ow2.asm:asm:9.7.1'
+	mixinCheckImplementation 'org.ow2.asm:asm-tree:9.7.1'
 }
 
 processResources {
@@ -264,4 +274,46 @@ tasks.register('deploy', Copy) {
 	include("*.jar")
 	exclude("*-sources.jar", "*-dev.jar", "*-sources-dev.jar")
 	into(project.findProperty('modsDir') ?: layout.buildDirectory.dir("deploy"))
+}
+
+// --- mixin descriptor validation -------------------------------------------
+// Every launch of this port used to die on exactly ONE bad mixin, because Mixin
+// only verifies descriptors while applying a class, and only for classes the
+// game actually loads. javac cannot see the problem (the Java types are all
+// valid) and Loom's remapper only warns about names it cannot map.
+//
+// This task performs the applicator's descriptor check ahead of time, for every
+// injector in every mixin listed in nostalgia.mixins.json, and prints the whole
+// list in one run. Report: build/reports/mixin-check/report.txt
+//
+// Warns by default; use -PmixinCheckStrict=true to fail the build on errors.
+tasks.register('validateMixinDescriptors', JavaExec) {
+	group = 'verification'
+	description = 'Checks every mixin injector against the real 1.21.11 classes it targets.'
+
+	dependsOn tasks.named('classes')
+	mainClass = 'MixinDescriptorCheck'
+	classpath = sourceSets.mixinCheck.runtimeClasspath
+
+	// The report is regenerated on every run; it is a diagnostic, not a build
+	// input, so there is nothing to be up to date about.
+	outputs.upToDateWhen { false }
+
+	doFirst {
+		def reportFile = layout.buildDirectory.file('reports/mixin-check/report.txt').get().asFile
+		reportFile.parentFile.mkdirs()
+		args = [
+				file('src/main/resources/nostalgia.mixins.json').absolutePath,
+				sourceSets.main.output.classesDirs.asPath,
+				// already contains the Mojang-mapped Minecraft jar, Fabric API,
+				// Sodium and the libs/ jars - i.e. every possible mixin target
+				sourceSets.main.compileClasspath.asPath,
+				reportFile.absolutePath,
+				(project.findProperty('mixinCheckStrict') ?: 'false').toString()
+		]
+	}
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('validateMixinDescriptors')
 }
