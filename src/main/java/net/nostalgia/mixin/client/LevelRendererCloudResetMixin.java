@@ -18,11 +18,19 @@ public abstract class LevelRendererCloudResetMixin {
 
     @Shadow @Final private LevelTargetBundle targets;
 
+    // PORT NOTE: 1.21.11 signatures, both confirmed against the mapped jar:
+    //   renderLevel(GraphicsResourceAllocator, DeltaTracker, boolean, Camera,
+    //               Matrix4f, Matrix4f, Matrix4f, GpuBufferSlice, Vector4f, boolean)
+    //   addMainPass(FrameGraphBuilder, Frustum, Matrix4f, GpuBufferSlice, boolean,
+    //               LevelRenderState, DeltaTracker, ProfilerFiller)
+    // 26.1 replaces Camera with CameraRenderState, folds the matrices into one
+    // Matrix4fc and appends ChunkSectionsToRender. The matrices are unused here,
+    // so they keep positional names rather than guessed ones.
     @Inject(
         method = "renderLevel",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/LevelRenderer;addMainPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/culling/Frustum;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;ZLnet/minecraft/client/renderer/state/level/LevelRenderState;Lnet/minecraft/client/DeltaTracker;Lnet/minecraft/util/profiling/ProfilerFiller;Lnet/minecraft/client/renderer/chunk/ChunkSectionsToRender;)V",
+            target = "Lnet/minecraft/client/renderer/LevelRenderer;addMainPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/culling/Frustum;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;ZLnet/minecraft/client/renderer/state/LevelRenderState;Lnet/minecraft/client/DeltaTracker;Lnet/minecraft/util/profiling/ProfilerFiller;)V",
             shift = At.Shift.AFTER
         )
     )
@@ -30,12 +38,13 @@ public abstract class LevelRendererCloudResetMixin {
             com.mojang.blaze3d.resource.GraphicsResourceAllocator resourceAllocator,
             net.minecraft.client.DeltaTracker deltaTracker,
             boolean renderOutline,
-            net.minecraft.client.renderer.state.CameraRenderState cameraState,
-            org.joml.Matrix4fc modelViewMatrix,
+            net.minecraft.client.Camera camera,
+            org.joml.Matrix4f matrix0,
+            org.joml.Matrix4f matrix1,
+            org.joml.Matrix4f matrix2,
             com.mojang.blaze3d.buffers.GpuBufferSlice terrainFog,
             org.joml.Vector4f fogColor,
             boolean shouldRenderSky,
-            net.minecraft.client.renderer.chunk.ChunkSectionsToRender chunkSectionsToRender,
             CallbackInfo ci,
             @com.llamalad7.mixinextras.sugar.Local FrameGraphBuilder frame
     ) {
