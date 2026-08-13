@@ -32,6 +32,20 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
+// The Alpha branch is selected by a sentinel value in SkyLightColor rather than
+// by any kind of switch, because a shader cannot ask which dimension it is in.
+// SkyLightColor is fed from the EnvironmentAttributes.SKY_LIGHT_COLOR attribute,
+// which a dimension type can set declaratively - no mixin required - and the
+// Alpha branch below produces greyscale output that never reads the colour, so
+// the channel is free to carry a flag there.
+//
+// The sentinel is ARGB 0xFF226BFF: 34/255 = 0.13333, 107/255 = 0.41961. Those are
+// the same two magic numbers the 26.1.2 build smuggled through BlockLightTint as
+// ARGB.color(34, 107, 255), a field that no longer exists in 1.21.11.
+const float ALPHA_SENTINEL_R = 0.1337;
+const float ALPHA_SENTINEL_G = 0.420;
+const float ALPHA_SENTINEL_EPSILON = 0.001;
+
 float get_brightness(float level) {
     return level / (4.0 - 3.0 * level);
 }
@@ -43,17 +57,14 @@ vec3 notGamma(vec3 color) {
     return color * (maxScaled / maxComponent);
 }
 
+bool isAlphaLighting() {
+    return abs(lightmapInfo.SkyLightColor.r - ALPHA_SENTINEL_R) < ALPHA_SENTINEL_EPSILON
+        && abs(lightmapInfo.SkyLightColor.g - ALPHA_SENTINEL_G) < ALPHA_SENTINEL_EPSILON;
+}
+
 void main() {
     // ---- Nostalgia: Alpha 1.1.2 lighting curve ----
-    // Signalled out of band through AmbientColor.rg. Vanilla only consumes
-    // AmbientColor as mix(color, AmbientColor, AmbientLightFactor), so in any
-    // dimension whose ambientLight is 0.0 the value is multiplied by zero and
-    // ignored. That covers both the overworld and nostalgia:alpha_112_01, which
-    // makes it a free channel to carry the flag. The magic constants are the
-    // same ones the 26.1.2 build smuggled through BlockLightTint, a field that
-    // no longer exists in 1.21.11.
-    if (abs(lightmapInfo.AmbientColor.r - 0.1337) < 0.001
-            && abs(lightmapInfo.AmbientColor.g - 0.420) < 0.001) {
+    if (isAlphaLighting()) {
         float block_level = floor(texCoord.x * 16.0) / 15.0;
         float sky_level = floor(texCoord.y * 16.0) / 15.0;
 
