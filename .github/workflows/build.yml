@@ -80,6 +80,19 @@ jobs:
           set -o pipefail
           ./gradlew build --stacktrace --info --no-daemon 2>&1 | tee build.log
 
+      # Runs again on purpose, as its own step: 'build' already invokes it via
+      # 'check', but a failure anywhere else in the build would hide the report.
+      # This is the step that answers "which mixins will crash the game" without
+      # having to launch the game once per mistake.
+      - name: Validate mixin injection descriptors
+        id: mixincheck
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          set -o pipefail
+          ./gradlew validateMixinDescriptors --no-daemon --stacktrace 2>&1 | tee mixin-check.log
+
       - name: Summarise compile errors
         if: always()
         continue-on-error: true
@@ -89,8 +102,43 @@ jobs:
           grep -n 'error:' build.log > build-logs/errors.txt 2>/dev/null || true
           echo "distinct error lines:" >> build-logs/errors.txt
           grep -c 'error:' build.log >> build-logs/errors.txt 2>/dev/null || true
-          grep -n 'Cannot remap' build.log > build-logs/remap-warnings.txt 2>/dev/null || true
+          # Mod-side remap warnings are ours to fix. Anything naming a Fabric API
+          # or Sodium class belongs to a dependency and is noise for this port.
+          grep -n 'Cannot remap' build.log > build-logs/remap-warnings-all.txt 2>/dev/null || true
+          grep -v -E 'net/fabricmc|fabric-api' build-logs/remap-warnings-all.txt \
+            > build-logs/remap-warnings.txt 2>/dev/null || true
           grep -n 'Zemlya library found\|no libs/zemlya' build.log > build-logs/zemlya-status.txt 2>/dev/null || true
+          grep -n 'SHA library found\|SHA jar not found' build.log > build-logs/sha-status.txt 2>/dev/null || true
+
+      - name: Collect the mixin descriptor report
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          mkdir -p build-logs
+          cp -f mixin-check.log build-logs/mixin-check.log 2>/dev/null || true
+          REPORT=build/reports/mixin-check/report.txt
+          if [ -f "$REPORT" ]; then
+            cp -f "$REPORT" build-logs/mixin-check.txt
+            ERRS=$(grep -c '^ERROR' "$REPORT" 2>/dev/null || echo 0)
+            WARNS=$(grep -c '^WARN' "$REPORT" 2>/dev/null || echo 0)
+            echo "mixin check: $ERRS error(s), $WARNS warning(s)"
+            {
+              echo "### Mixin descriptor check"
+              echo ""
+              echo "- errors: $ERRS"
+              echo "- warnings: $WARNS"
+              echo ""
+              echo '```'
+              grep '^ERROR' "$REPORT" | head -60 || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            if [ "$ERRS" -gt 0 ]; then
+              echo "::warning::mixin descriptor check found $ERRS injector(s) that will crash the game - see build-logs/mixin-check.txt"
+            fi
+          else
+            echo "::warning::no mixin descriptor report was produced - the validator did not run"
+          fi
 
       - name: Dump real 1.21.11 API signatures
         if: always()
@@ -105,11 +153,10 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 6. The vanilla injection targets are fixed (Gui#renderItemHotbar,
-          # InventoryScreen#renderBg, LoadingOverlay#drawProgressBar). What is left
-          # are the two MOD targets - Sodium's LevelSlice and Punchy's
-          # ToolKindResolver - so this round dumps those instead of vanilla.
-          CLASSES='net.minecraft.client.gui.Gui net.minecraft.client.gui.screens.inventory.InventoryScreen net.minecraft.client.gui.screens.LoadingOverlay'
+          # Round 7. The descriptor validator now covers the vanilla injection
+          # points wholesale, so this dump is only for the two MOD targets it
+          # cannot reason about: Sodium's LevelSlice and Punchy's ToolKindResolver.
+          CLASSES='net.minecraft.client.renderer.LevelRenderer net.minecraft.client.Camera'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -159,13 +206,14 @@ jobs:
           done
           # Where did ambient occlusion move to inside Sodium? Dump every Sodium
           # class whose signatures still mention it, so the injector can target
-          # the real owner instead of a guessed name.
+          # the real owner instead of a guessed name. No head limit: the previous
+          # cap of 400 classes cut the scan off before it printed a single hit.
           SODIUM_JAR=$(echo $MOD_JARS | tr ' ' '\n' | grep -i sodium | head -1)
           if [ -n "$SODIUM_JAR" ]; then
             echo "" >> "$OUT"
             echo "########## sodium classes mentioning AmbientOcclusion ##########" >> "$OUT"
             echo "# jar: $SODIUM_JAR" >> "$OUT"
-            for CL in $(unzip -l "$SODIUM_JAR" 2>/dev/null | awk '{print $4}' | grep '^net/caffeinemc/.*\.class$' | grep -viE '\$[0-9]+\.class$' | head -400); do
+            for CL in $(unzip -l "$SODIUM_JAR" 2>/dev/null | awk '{print $4}' | grep '^net/caffeinemc/.*\.class$' | grep -viE '\$[0-9]+\.class$'); do
               CN=$(echo "${CL%.class}" | tr '/' '.')
               if javap -p -cp "$SODIUM_JAR" "$CN" 2>/dev/null | grep -iq 'ambientocclusion'; then
                 echo "" >> "$OUT"
@@ -188,6 +236,7 @@ jobs:
           cp -f build.log build-logs/build.log 2>/dev/null || true
           cp -rf build/reports build-logs/reports 2>/dev/null || true
           echo "build outcome: ${{ steps.build.outcome }}" > build-logs/outcome.txt
+          echo "mixin check outcome: ${{ steps.mixincheck.outcome }}" >> build-logs/outcome.txt
           ls -R build-logs || true
 
       - name: Upload build log
