@@ -19,17 +19,20 @@ public abstract class LevelRendererDepthMaskMixin {
 
     @Shadow @Final private LevelTargetBundle targets;
 
+    // PORT NOTE: 1.21.11 signature is
+    //   addMainPass(FrameGraphBuilder, Frustum, Matrix4f, GpuBufferSlice, boolean,
+    //               LevelRenderState, DeltaTracker, ProfilerFiller)
+    // 26.1 widens the matrix to Matrix4fc and appends ChunkSectionsToRender.
     @Inject(method = "addMainPass", at = @At("HEAD"))
     private void nost$addDepthMaskPass(
             FrameGraphBuilder frame,
             net.minecraft.client.renderer.culling.Frustum frustum,
-            org.joml.Matrix4fc modelViewMatrix,
+            org.joml.Matrix4f modelViewMatrix,
             com.mojang.blaze3d.buffers.GpuBufferSlice terrainFog,
             boolean renderOutline,
             net.minecraft.client.renderer.state.LevelRenderState levelRenderState,
             DeltaTracker deltaTracker,
             net.minecraft.util.profiling.ProfilerFiller profiler,
-            net.minecraft.client.renderer.chunk.ChunkSectionsToRender chunkSectionsToRender,
             CallbackInfo ci
     ) {
         if (PortalDepthMaskRenderer.shouldRender()) {
