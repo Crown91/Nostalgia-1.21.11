@@ -108,6 +108,7 @@
     "ritual.render.WeatherEffectRendererMixin",
     "client.RenderPipelinesMixin",
     "client.WhiteoutInjectMixin",
+    "client.LightDiagnosticsMixin",
     "client.LevelRendererDepthMaskMixin",
     "client.LevelRendererCloudResetMixin",
     "client.GameRendererCrashFixMixin",
