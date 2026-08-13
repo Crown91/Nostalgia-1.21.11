@@ -64,14 +64,20 @@ public class LightDiagnosticsMixin {
             sb.append(" [level:").append(t).append("]");
         }
 
+        Camera camera = null;
         try {
-            Camera camera = mc.gameRenderer.getMainCamera();
+            camera = mc.gameRenderer.getMainCamera();
             sb.append(" SKY_LIGHT_FACTOR=")
                     .append(camera.attributeProbe().getValue(EnvironmentAttributes.SKY_LIGHT_FACTOR, 1.0F));
-            sb.append(" BLOCK_LIGHT_TINT=")
-                    .append(camera.attributeProbe().getValue(EnvironmentAttributes.BLOCK_LIGHT_TINT, 1.0F));
         } catch (Throwable t) {
             sb.append(" [probe:").append(t).append("]");
+        }
+
+        // BLOCK_LIGHT_TINT no longer exists under that name in 1.21.11, so read
+        // every public static attribute constant reflectively instead of naming
+        // them. Anything the probe answers for gets printed.
+        if (camera != null) {
+            nostalgia$dumpAllAttributes(sb, camera);
         }
 
         // Walk Minecraft, its renderers and their fields looking for anything
@@ -88,6 +94,55 @@ public class LightDiagnosticsMixin {
         nostalgia$staticCall(sb, "net.nostalgia.client.events.echo.RitualVisualManager", "getWhiteoutAlpha");
 
         nostalgia$DIAG.info(sb.toString());
+    }
+
+    /**
+     * Asks the camera probe for every attribute constant declared on
+     * EnvironmentAttributes, so the real 1.21.11 names show up in the log
+     * without having to guess them.
+     */
+    @Unique
+    private static void nostalgia$dumpAllAttributes(StringBuilder sb, Camera camera) {
+        try {
+            Object probe = camera.attributeProbe();
+            Method getValue = null;
+            for (Method candidate : probe.getClass().getMethods()) {
+                if (candidate.getName().equals("getValue") && candidate.getParameterCount() == 2) {
+                    getValue = candidate;
+                    break;
+                }
+            }
+            if (getValue == null) {
+                sb.append(" [attrs: no getValue]");
+                return;
+            }
+            getValue.setAccessible(true);
+            sb.append(" attrs{");
+            boolean first = true;
+            for (Field field : EnvironmentAttributes.class.getDeclaredFields()) {
+                if (!java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+                try {
+                    field.setAccessible(true);
+                    Object attribute = field.get(null);
+                    if (attribute == null) {
+                        continue;
+                    }
+                    Object value = getValue.invoke(probe, attribute, 1.0F);
+                    if (!first) {
+                        sb.append(", ");
+                    }
+                    first = false;
+                    sb.append(field.getName()).append('=').append(value);
+                } catch (Throwable ignored) {
+                    // not every constant is a queryable attribute, skip it
+                }
+            }
+            sb.append('}');
+        } catch (Throwable t) {
+            sb.append(" [attrs:").append(t).append("]");
+        }
     }
 
     /**
