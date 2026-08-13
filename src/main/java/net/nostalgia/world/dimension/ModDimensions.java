@@ -15,6 +15,23 @@ import net.minecraft.core.HolderSet;
 import net.nostalgia.NostalgiaMod;
 
 public class ModDimensions {
+    /**
+     * Sentinel fed to the overridden vanilla lightmap shader to switch it to the
+     * Alpha 1.1.2 lighting curve.
+     *
+     * <p>A shader cannot ask which dimension it is rendering, and 1.21.11 removed
+     * BLOCK_LIGHT_TINT, the channel the 26.1 build used to smuggle this flag in.
+     * SKY_LIGHT_COLOR is the replacement carrier: it reaches the shader's
+     * LightmapInfo.SkyLightColor through the ordinary attribute system, so no
+     * mixin is involved, and the Alpha branch outputs greyscale without ever
+     * reading the colour, which leaves the channel free to carry a flag.
+     *
+     * <p>ARGB 0xFF226BFF decodes to 34/255 = 0.13333 and 107/255 = 0.41961, the
+     * two magic numbers the shader matches with a 0.001 epsilon. Keep this value
+     * and assets/minecraft/shaders/core/lightmap.fsh in sync.
+     */
+    public static final int ALPHA_LIGHTING_SENTINEL_COLOR = 0xFF226BFF;
+
     public static final ResourceKey<Level> RD_132211_LEVEL_KEY = ResourceKey.create(Registries.DIMENSION,
             Identifier.fromNamespaceAndPath(NostalgiaMod.MOD_ID, "rd_132211"));
     public static final ResourceKey<DimensionType> RD_132211_DIM_TYPE = ResourceKey.create(
@@ -57,6 +74,8 @@ public class ModDimensions {
                         .set(EnvironmentAttributes.FOG_COLOR, 0xFFEBEBFF)
                         .set(EnvironmentAttributes.CLOUD_HEIGHT, 108.0f)
                         .set(EnvironmentAttributes.CLOUD_COLOR, 0xFFFFFFFF)
+                        // Switches the overridden lightmap shader to the Alpha curve.
+                        .set(EnvironmentAttributes.SKY_LIGHT_COLOR, ALPHA_LIGHTING_SENTINEL_COLOR)
                         .build(),
                 HolderSet.empty()
         ));
