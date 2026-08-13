@@ -153,17 +153,15 @@ jobs:
           FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)
           ALL_JARS="$JARS $FABRIC_JARS"
           echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
-          # Round 9. Two feature groups are being un-stubbed from this dump:
-          #  - the lightmap classes, because the mod overrides the VANILLA
-          #    lightmap.fsh and has to feed values through them. Field ORDER
-          #    mirrors the shader's std140 block and one inserted field silently
-          #    blacks out the world, so the member list must be read, not guessed.
-          #  - the clock classes, because the ritual dimension transition rewinds
-          #    the visual day/night cycle through the client clock. The port note
-          #    on ClientClockManagerFreezeMixin claims these are 26.1-only, which
-          #    is already known to be wrong for WorldClock: ModDimensions compiles
-          #    against WorldClocks.OVERWORLD today.
-          CLASSES='net.minecraft.client.renderer.LevelRenderer net.minecraft.client.Camera net.minecraft.client.renderer.LightTexture net.minecraft.client.renderer.state.LightmapRenderState net.minecraft.client.renderer.state.LightmapRenderStateExtractor net.minecraft.world.attribute.EnvironmentAttributes net.minecraft.world.attribute.EnvironmentAttributeProbe net.minecraft.world.attribute.EnvironmentAttributeMap net.minecraft.world.level.dimension.DimensionType net.minecraft.client.ClientClockManager net.minecraft.world.clock.WorldClock net.minecraft.world.clock.WorldClocks net.minecraft.client.multiplayer.ClientLevel'
+          # Round 10. Settled by the previous two dumps, kept here as a record:
+          #  - LightmapRenderState / LightmapRenderStateExtractor do NOT exist in
+          #    1.21.11; LightTexture fills the UBO itself. The Alpha lightmap flag
+          #    therefore travels through EnvironmentAttributes.SKY_LIGHT_COLOR.
+          #  - ClientClockManager, WorldClock and WorldClocks do NOT exist either.
+          #    DimensionType carries HolderSet<world.timeline.Timeline> instead, so
+          #    the ritual time rewind has to be rebuilt on Timeline / Level day
+          #    time. That is what the classes below are for.
+          CLASSES='net.minecraft.client.renderer.LightTexture net.minecraft.world.attribute.EnvironmentAttributes net.minecraft.world.attribute.EnvironmentAttributeProbe net.minecraft.world.attribute.EnvironmentAttributeSystem net.minecraft.world.level.dimension.DimensionType net.minecraft.world.timeline.Timeline net.minecraft.world.level.Level net.minecraft.client.multiplayer.ClientLevel net.minecraft.world.level.storage.LevelData net.minecraft.world.TickRateManager net.minecraft.client.DeltaTracker'
           for C in $CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -185,9 +183,8 @@ jobs:
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
             fi
           done
-          # Some of the classes above move between packages across versions. If a
-          # lookup above failed, locate it by simple name so the real fully
-          # qualified name shows up instead of a dead end.
+          # Classes move between packages across versions. Listing them by simple
+          # name turns a "class not present" dead end into the real name.
           MC_JAR=""
           for J in $ALL_JARS; do
             case "$J" in *intermediary*) continue;; esac
@@ -198,11 +195,20 @@ jobs:
           done
           if [ -n "$MC_JAR" ]; then
             echo "" >> "$OUT"
-            echo "########## classes matching Lightmap / LightTexture / EnvironmentAttribute / Clock ##########" >> "$OUT"
+            echo "########## classes matching Timeline / Clock / DayTime / Lightmap ##########" >> "$OUT"
             echo "# jar: $MC_JAR" >> "$OUT"
             unzip -l "$MC_JAR" 2>/dev/null | awk '{print $4}' \
-              | grep -E 'Lightmap|LightTexture|EnvironmentAttribute|Clock' \
+              | grep -iE 'timeline|clock|daytime|lightmap' \
               | grep '\.class$' >> "$OUT" || true
+            # Everything in the timeline package, whatever it is called inside.
+            echo "" >> "$OUT"
+            echo "########## the world.timeline package ##########" >> "$OUT"
+            for CL in $(unzip -l "$MC_JAR" 2>/dev/null | awk '{print $4}' | grep '^net/minecraft/world/timeline/.*\.class$'); do
+              CN=$(echo "${CL%.class}" | tr '/' '.')
+              echo "" >> "$OUT"
+              echo "===== $CN =====" >> "$OUT"
+              javap -p -cp "$MC_JAR" "$CN" >> "$OUT" 2>&1
+            done
           fi
           # ---- mod classes: Sodium (0.8.12+) and Punchy (libs/punchy.jar) ----
           # Mod names are never obfuscated, so a "Cannot remap" here means the
@@ -211,7 +217,7 @@ jobs:
           echo "" >> "$OUT"
           echo "########## MOD JARS ##########" >> "$OUT"
           for J in $MOD_JARS; do echo "$J" >> "$OUT"; done
-          MOD_CLASSES='net.caffeinemc.mods.sodium.client.world.LevelSlice punchy.client.render.ToolKindResolver punchy.client.renderer.layer.VanillaFirstPersonItemLayer punchy.client.renderer.layer.PlayerArmModelLayer'
+          MOD_CLASSES='net.caffeinemc.mods.sodium.client.world.LevelSlice'
           for C in $MOD_CLASSES; do
             P=$(echo "$C" | tr '.' '/').class
             FOUND=""
@@ -230,24 +236,6 @@ jobs:
               javap -p -cp "$FOUND" "$C" >> "$OUT" 2>&1
             fi
           done
-          # Where did ambient occlusion move to inside Sodium? Dump every Sodium
-          # class whose signatures still mention it, so the injector can target
-          # the real owner instead of a guessed name. No head limit: the previous
-          # cap of 400 classes cut the scan off before it printed a single hit.
-          SODIUM_JAR=$(echo $MOD_JARS | tr ' ' '\n' | grep -i sodium | head -1)
-          if [ -n "$SODIUM_JAR" ]; then
-            echo "" >> "$OUT"
-            echo "########## sodium classes mentioning AmbientOcclusion ##########" >> "$OUT"
-            echo "# jar: $SODIUM_JAR" >> "$OUT"
-            for CL in $(unzip -l "$SODIUM_JAR" 2>/dev/null | awk '{print $4}' | grep '^net/caffeinemc/.*\.class$' | grep -viE '\$[0-9]+\.class$'); do
-              CN=$(echo "${CL%.class}" | tr '/' '.')
-              if javap -p -cp "$SODIUM_JAR" "$CN" 2>/dev/null | grep -iq 'ambientocclusion'; then
-                echo "" >> "$OUT"
-                echo "===== $CN =====" >> "$OUT"
-                javap -p -cp "$SODIUM_JAR" "$CN" 2>&1 | grep -i 'class \|ambientocclusion' >> "$OUT"
-              fi
-            done
-          fi
           # NOTE: never sort this file. The sections above are only readable in
           # the order they were written, and record field order is the whole
           # point of this step.
