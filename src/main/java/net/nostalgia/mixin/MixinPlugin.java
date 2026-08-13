@@ -2,6 +2,8 @@ package net.nostalgia.mixin;
 
 import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -12,20 +14,24 @@ import java.util.Set;
 
 public class MixinPlugin implements IMixinConfigPlugin {
 
+    // System.out is not redirected into latest.log yet while mixin configs are
+    // being loaded, so kill switch decisions have to go through SLF4J to be
+    // visible in the log file the player sends us.
+    private static final Logger LOGGER = LoggerFactory.getLogger("nostalgia/mixinplugin");
+
     /**
      * Debug kill switch. Pass a comma separated list of mixin names as a JVM
      * argument and those mixins are skipped entirely:
      *
      *   -Dnostalgia.disableMixins=client.RenderPipelinesMixin,rd132211.RdFullBrightLightmapMixin
      *
-     * Matching is a suffix/substring match on the fully qualified mixin class
-     * name, so both "RdFullBrightLightmapMixin" and the full package path work.
-     * The special value "render" is not magic, it simply matches every mixin
-     * whose name contains it.
+     * Matching is a case-insensitive substring match on the fully qualified
+     * mixin class name, so a bare class name, a package fragment or the full
+     * path all work. Passing "net.nostalgia.mixin" disables every mixin this
+     * mod owns, which is useful as a baseline.
      *
-     * This exists so a single jar can be used to bisect a rendering problem
-     * instead of rebuilding once per experiment. It is inert when the property
-     * is absent.
+     * This exists so a single jar can bisect a rendering problem instead of
+     * rebuilding once per experiment. It is inert when the property is absent.
      */
     private static final List<String> DISABLED = readDisabledList();
 
@@ -38,14 +44,19 @@ public class MixinPlugin implements IMixinConfigPlugin {
                 disabled.add(trimmed.toLowerCase(Locale.ROOT));
             }
         }
-        if (!disabled.isEmpty()) {
-            System.out.println("[nostalgia] mixin kill switch active for: " + disabled);
-        }
         return disabled;
     }
 
+    private static boolean announced = false;
+
     @Override
-    public void onLoad(String mixinPackage) {}
+    public void onLoad(String mixinPackage) {
+        if (DISABLED.isEmpty()) {
+            LOGGER.info("KILLSWITCH inactive: -Dnostalgia.disableMixins was not set");
+        } else {
+            LOGGER.info("KILLSWITCH active with {} token(s): {}", DISABLED.size(), DISABLED);
+        }
+    }
 
     @Override
     public String getRefMapperConfig() {
@@ -55,10 +66,14 @@ public class MixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (!DISABLED.isEmpty()) {
+            if (!announced) {
+                announced = true;
+                LOGGER.info("KILLSWITCH first evaluation, tokens: {}", DISABLED);
+            }
             String lower = mixinClassName.toLowerCase(Locale.ROOT);
             for (String token : DISABLED) {
                 if (lower.contains(token)) {
-                    System.out.println("[nostalgia] skipping mixin " + mixinClassName + " (disabled by " + token + ")");
+                    LOGGER.info("KILLSWITCH skipping {} (matched token '{}')", mixinClassName, token);
                     return false;
                 }
             }
