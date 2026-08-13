@@ -2,7 +2,8 @@ package net.nostalgia.mixin.rd132211;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
-import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.caffeinemc.mods.sodium.client.render.model.AmbientOcclusionMode;
+import net.caffeinemc.mods.sodium.fabric.block.FabricBlockAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LightTexture;
@@ -72,15 +73,23 @@ abstract class RdFullBrightLightmapMixin {
     }
 }
 
-@Mixin(LevelSlice.class)
+// Sodium moved the ambient occlusion decision out of LevelSlice and into
+// PlatformBlockAccess.usesAmbientOcclusion, which returns an AmbientOcclusionMode
+// rather than a boolean. FabricBlockAccess is the Fabric implementation of it.
+@Mixin(value = FabricBlockAccess.class, remap = false)
 abstract class RdSodiumAOMixin {
-    @Shadow(remap = false)
-    private ClientLevel level;
 
-    @Inject(method = "useAmbientOcclusion", at = @At("HEAD"), cancellable = true, remap = false)
-    private void nostalgia$disableAOInRD(CallbackInfoReturnable<Boolean> cir) {
-        if (this.level != null && this.level.dimension() == ModDimensions.RD_132211_LEVEL_KEY) {
-            cir.setReturnValue(false);
+    @Inject(
+            method = "usesAmbientOcclusion",
+            at = @At("HEAD"),
+            cancellable = true,
+            remap = false,
+            require = 0
+    )
+    private void nostalgia$disableAOInRD(CallbackInfoReturnable<AmbientOcclusionMode> cir) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != null && level.dimension().equals(ModDimensions.RD_132211_LEVEL_KEY)) {
+            cir.setReturnValue(AmbientOcclusionMode.DISABLED);
         }
     }
 }
