@@ -35,6 +35,10 @@ import java.util.zip.ZipFile;
  * which is exactly the state of both the mod classes and the Minecraft jar
  * before {@code remapJar} runs, so annotation strings and target classes are
  * directly comparable.
+ *
+ * <p>Note that Mixin's annotations are declared {@code RetentionPolicy.CLASS},
+ * so ASM reports them as <em>invisible</em> annotations. Both lists must always
+ * be consulted - see {@link #annotationsOf}.
  */
 public final class MixinDescriptorCheck {
 
@@ -116,10 +120,7 @@ public final class MixinDescriptorCheck {
             }
 
             for (MethodNode method : mixin.methods) {
-                if (method.visibleAnnotations == null) {
-                    continue;
-                }
-                for (AnnotationNode ann : method.visibleAnnotations) {
+                for (AnnotationNode ann : annotationsOf(method.visibleAnnotations, method.invisibleAnnotations)) {
                     if (SHADOW_ANN.equals(ann.desc)) {
                         checkShadowMethod(entry, method, targetNodes);
                         continue;
@@ -135,10 +136,7 @@ public final class MixinDescriptorCheck {
             }
 
             for (FieldNode field : mixin.fields) {
-                if (field.visibleAnnotations == null) {
-                    continue;
-                }
-                for (AnnotationNode ann : field.visibleAnnotations) {
+                for (AnnotationNode ann : annotationsOf(field.visibleAnnotations, field.invisibleAnnotations)) {
                     if (SHADOW_ANN.equals(ann.desc)) {
                         checkShadowField(entry, field, targetNodes);
                     }
@@ -150,6 +148,13 @@ public final class MixinDescriptorCheck {
         line("verified injectors : " + verified);
         line("errors             : " + errors);
         line("warnings           : " + warnings);
+
+        if (verified == 0 && errors > 0) {
+            line("");
+            line("NOTE: not a single injector could be verified, which almost certainly means this");
+            line("      tool failed to read the classes rather than that every mixin is broken.");
+            line("      Treat the list above as suspect until at least some injectors verify.");
+        }
 
         if (reportFile.getParent() != null) {
             Files.createDirectories(reportFile.getParent());
@@ -282,11 +287,24 @@ public final class MixinDescriptorCheck {
 
     // ----------------------------------------------------------- annotations
 
-    private static List<String> targetsOf(ClassNode mixin) {
-        if (mixin.visibleAnnotations == null) {
-            return null;
+    /**
+     * Mixin annotations are CLASS-retention, so ASM hands them over as
+     * invisible annotations. Anything that inspects them must look at both
+     * lists or it will see nothing at all.
+     */
+    private static List<AnnotationNode> annotationsOf(List<AnnotationNode> visible, List<AnnotationNode> invisible) {
+        List<AnnotationNode> all = new ArrayList<>();
+        if (visible != null) {
+            all.addAll(visible);
         }
-        for (AnnotationNode ann : mixin.visibleAnnotations) {
+        if (invisible != null) {
+            all.addAll(invisible);
+        }
+        return all;
+    }
+
+    private static List<String> targetsOf(ClassNode mixin) {
+        for (AnnotationNode ann : annotationsOf(mixin.visibleAnnotations, mixin.invisibleAnnotations)) {
             if (!MIXIN_ANN.equals(ann.desc)) {
                 continue;
             }
