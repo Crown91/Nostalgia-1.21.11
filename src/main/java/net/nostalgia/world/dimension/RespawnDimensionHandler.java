@@ -11,7 +11,8 @@ import net.nostalgia.command.TeleportCommand;
 
 /**
  * Keeps players inside the mod dimension they died in instead of sending them back to the
- * overworld spawn. Vanilla dimensions keep their normal respawn behaviour.
+ * overworld spawn. The player reappears at that dimension's spawn point.
+ * Vanilla dimensions keep their normal respawn behaviour.
  */
 public class RespawnDimensionHandler implements ModInitializer {
 
@@ -27,9 +28,6 @@ public class RespawnDimensionHandler implements ModInitializer {
             if (!isNostalgiaDimension(deathDimension)) {
                 return;
             }
-            if (newPlayer.level().dimension().equals(deathDimension)) {
-                return;
-            }
             if (!(newPlayer.level() instanceof ServerLevel respawnLevel)) {
                 return;
             }
@@ -43,7 +41,8 @@ public class RespawnDimensionHandler implements ModInitializer {
                 return;
             }
 
-            BlockPos respawnPos = TeleportCommand.findSafeSpawn(deathLevel, oldPlayer.getBlockX(), oldPlayer.getBlockZ());
+            // Always place the player on the dimension's own spawn point, not near the death spot.
+            BlockPos respawnPos = TeleportCommand.findSafeSpawn(deathLevel, 0, 0);
             newPlayer.teleportTo(deathLevel,
                     respawnPos.getX() + 0.5,
                     respawnPos.getY(),
