@@ -13,7 +13,8 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.nostalgia.NostalgiaMod"
+      "net.nostalgia.NostalgiaMod",
+      "net.nostalgia.world.dimension.RespawnDimensionHandler"
     ],
     "client": [
       "net.nostalgia.NostalgiaClient",

@@ -20,29 +20,46 @@ public abstract class LegacyPhysicsMobAIMixin {
     @Inject(method = "tick", at = @At("HEAD"))
     private void injectAlphaAI(CallbackInfo ci) {
         Mob self = (Mob)(Object)this;
-        if (self.level() instanceof net.minecraft.server.level.ServerLevel && self.level().dimension().equals(net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY)) {
-            if (!self.getTags().contains("alpha_ai_set")) {
-
-                this.goalSelector.removeAllGoals(goal -> {
-                    String name = goal.getClass().getSimpleName();
-                    return !name.equals("SwellGoal") &&
-                           !name.equals("RangedBowAttackGoal") &&
-                           !name.equals("LeapAtTargetGoal") &&
-                           !name.equals("FloatGoal") &&
-                           !name.contains("Ghast") && 
-                           !name.contains("Slime");
-                });
-
-                this.setPathfindingMalus(PathType.DANGER_FIRE, 0.0F);
-                this.setPathfindingMalus(PathType.DAMAGE_FIRE, 0.0F);
-                this.setPathfindingMalus(PathType.LAVA, 0.0F);
-                this.setPathfindingMalus(PathType.DANGER_OTHER, 0.0F);
-                this.setPathfindingMalus(PathType.DAMAGE_OTHER, 0.0F);
-
-                self.addTag("alpha_ai_set");
-            }
-
-            net.nostalgia.alphalogic.bridge.AlphaAIEngine.tickActivity(self);
+        if (!(self.level() instanceof net.minecraft.server.level.ServerLevel)) {
+            return;
         }
+        if (!self.level().dimension().equals(net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY)) {
+            return;
+        }
+
+        // Creepers keep their vanilla goal set. Their explosion is driven entirely by
+        // SwellGoal, so stripping goals here left them permanently harmless.
+        if (self instanceof net.minecraft.world.entity.monster.Creeper) {
+            return;
+        }
+
+        if (!self.getTags().contains("alpha_ai_set")) {
+
+            this.goalSelector.removeAllGoals(goal -> {
+                // Depending on the version the predicate may receive the WrappedGoal
+                // container instead of the goal itself; unwrap it before matching by name.
+                net.minecraft.world.entity.ai.goal.Goal inner =
+                        goal instanceof net.minecraft.world.entity.ai.goal.WrappedGoal wrapped
+                                ? wrapped.getGoal()
+                                : goal;
+                String name = inner.getClass().getSimpleName();
+                return !name.equals("SwellGoal") &&
+                       !name.equals("RangedBowAttackGoal") &&
+                       !name.equals("LeapAtTargetGoal") &&
+                       !name.equals("FloatGoal") &&
+                       !name.contains("Ghast") && 
+                       !name.contains("Slime");
+            });
+
+            this.setPathfindingMalus(PathType.DANGER_FIRE, 0.0F);
+            this.setPathfindingMalus(PathType.DAMAGE_FIRE, 0.0F);
+            this.setPathfindingMalus(PathType.LAVA, 0.0F);
+            this.setPathfindingMalus(PathType.DANGER_OTHER, 0.0F);
+            this.setPathfindingMalus(PathType.DAMAGE_OTHER, 0.0F);
+
+            self.addTag("alpha_ai_set");
+        }
+
+        net.nostalgia.alphalogic.bridge.AlphaAIEngine.tickActivity(self);
     }
 }
