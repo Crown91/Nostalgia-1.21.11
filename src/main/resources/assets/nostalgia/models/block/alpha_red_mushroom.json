@@ -1,8 +1,6 @@
 {
-  "parent": "nostalgia:block/alpha_yellow_flower",
+  "parent": "minecraft:block/cross",
   "textures": {
-    "particle": "nostalgia:block/alpha_red_mushroom",
-    "cross": "nostalgia:block/alpha_red_mushroom",
-    "texture": "nostalgia:block/alpha_red_mushroom"
+    "cross": "nostalgia:block/alpha_red_mushroom"
   }
 }

@@ -1,7 +1,6 @@
 {
-  "parent": "nostalgia:block/alpha_wheat_stage0",
+  "parent": "minecraft:block/crop",
   "textures": {
-    "particle": "nostalgia:block/alpha_wheat_stage7",
     "crop": "nostalgia:block/alpha_wheat_stage7"
   }
 }

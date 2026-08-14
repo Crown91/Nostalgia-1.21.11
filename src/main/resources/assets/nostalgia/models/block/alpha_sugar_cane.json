@@ -1,8 +1,6 @@
 {
   "parent": "minecraft:block/cross",
   "textures": {
-    "cross": "nostalgia:block/alpha_sugar_cane",
-    "texture": "nostalgia:block/alpha_sugar_cane"
-  },
-  "render_type": "minecraft:cutout"
+    "cross": "nostalgia:block/alpha_sugar_cane"
+  }
 }

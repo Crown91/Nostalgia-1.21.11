@@ -2,7 +2,6 @@ package net.nostalgia.mixin.client.ritual;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.timeline.Timeline;
 import net.nostalgia.alphalogic.ritual.event.ClientEchoRitualView;
 import net.nostalgia.client.events.core.ClientFreezeRegions;
 import net.nostalgia.client.events.core.ClientRitualEventRegistry;
@@ -14,58 +13,48 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// PORT NOTE 26.1.2 -> 1.21.11:
-//
-// The original mixin targeted net.minecraft.client.ClientClockManager:
-//     @Inject(method = "getTotalTicks", at = @At("RETURN"), cancellable = true)
-//     void (Holder<WorldClock> definition, CallbackInfoReturnable<Long> cir)
-//
-// ClientClockManager, WorldClock and WorldClocks do not exist in 1.21.11 - the
-// whole clock system was renamed and moved into net.minecraft.world.timeline.
-// Verified against the real 1.21.11 jar (api dump):
-//     net.minecraft.world.timeline.Timeline
-//       public long getCurrentTicks(Level)
-//       public long getTotalTicks(Level)
-//
-// Timeline is a COMMON class, not a client-only one, so two safety measures are
-// used: the mixin is registered in the "client" block of nostalgia.mixins.json
-// (so it is never applied on a dedicated server), and every injection is guarded
-// by level.isClientSide() plus an identity check against the client level. The
-// server's authoritative world time must never be modified here.
-//
-// This hook is what produces the fast day/night spin during a ritual transition
-// (Timelines.DAY / Timelines.MOON sample their tracks through this method), and
-// what freezes time inside a beacon freeze region.
-@Mixin(Timeline.class)
+/**
+ * Rewinds the client-side day time during a ritual transition and freezes it inside timestop
+ * zones.
+ *
+ * <p>26.1 hooked {@code ClientClockManager.getTotalTicks(Holder<WorldClock>)}. That class does not
+ * exist in 1.21.11. Hooking {@code Timeline.getTotalTicks(Level)} was not enough either: it merely
+ * delegates to {@link Level#getDayTime()}, and the environment attribute system samples time
+ * through its own {@code LongSupplier} (see {@code AttributeTrackSampler.dayTimeGetter}) which
+ * bypasses {@code Timeline} entirely. That is why only the sun visibly moved while sky colour,
+ * light and fog stayed put.
+ *
+ * <p>{@link Level#getDayTime()} is the one shared choke point - {@code ClientLevel} does not
+ * override it - so a single hook here drives the sun, the moon, the sky gradient, the fog and the
+ * light level together, reproducing the original morning -> day -> evening -> night sweep.
+ */
+@Mixin(Level.class)
 public abstract class ClientClockManagerFreezeMixin {
 
-    @Inject(
-        method = "getTotalTicks(Lnet/minecraft/world/level/Level;)J",
-        at = @At("RETURN"),
-        cancellable = true
-    )
-    private void nostalgia$rewindClientTimeline(Level level, CallbackInfoReturnable<Long> cir) {
-        // Never touch server-side time.
-        if (level == null || !level.isClientSide()) return;
+        @Inject(method = "getDayTime()J", at = @At("RETURN"), cancellable = true)
+        private void nostalgia$rewindClientTimeline(CallbackInfoReturnable<Long> cir) {
+                Level self = (Level) (Object) this;
+                if (!self.isClientSide()) {
+                        return;
+                }
 
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level != level) return;
+                Minecraft mc = Minecraft.getInstance();
+                if (mc == null || mc.level != self) {
+                        return;
+                }
 
-        long real = cir.getReturnValueJ();
+                long real = cir.getReturnValueJ();
+                ZoneTimeBridge.lastRealClockTicks = real;
+                ZoneTimeBridge.hasClockReal = true;
 
-        // Publish the untouched value so the zone-time machinery has a real reference.
-        ZoneTimeBridge.lastRealClockTicks = real;
-        ZoneTimeBridge.hasClockReal = true;
+                ClientEchoRitualView transition = ClientRitualEventRegistry.activeTransition();
+                if (transition != null && !transition.isBystander()) {
+                        cir.setReturnValue(RitualVisualManager.calculateInertialTime(real));
+                        return;
+                }
 
-        ClientEchoRitualView transition = ClientRitualEventRegistry.activeTransition();
-        if (transition != null && !transition.isBystander()) {
-            // Accelerated / inertial visual time while the ritual is running.
-            cir.setReturnValue(RitualVisualManager.calculateInertialTime(real));
-            return;
+                if (ClientFreezeRegions.hasRegions() || ClientZoneTime.isActive()) {
+                        cir.setReturnValue(ClientZoneTime.getEffectiveClockTicks(real));
+                }
         }
-
-        if (ClientFreezeRegions.hasRegions() || ClientZoneTime.isActive()) {
-            cir.setReturnValue(ClientZoneTime.getEffectiveClockTicks(real));
-        }
-    }
 }

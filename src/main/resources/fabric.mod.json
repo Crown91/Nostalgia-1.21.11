@@ -16,7 +16,8 @@
       "net.nostalgia.NostalgiaMod"
     ],
     "client": [
-      "net.nostalgia.NostalgiaClient"
+      "net.nostalgia.NostalgiaClient",
+      "net.nostalgia.client.render.AlphaRenderLayers"
     ],
     "fabric-datagen": [
       "net.nostalgia.datagen.NostalgiaDataGenerator"
