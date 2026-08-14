@@ -1,0 +1,232 @@
+name: Compare upstream jars
+
+on:
+  workflow_dispatch:
+    inputs:
+      old_tag:
+        description: "Older upstream release tag"
+        default: "scr-2"
+        required: true
+      new_tag:
+        description: "Newer upstream release tag"
+        default: "scr-3"
+        required: true
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '22'
+
+      - name: Download both upstream release jars
+        run: |
+          set -e
+          mkdir -p work/out
+          cd work
+          OLD_TAG='${{ github.event.inputs.old_tag }}'
+          NEW_TAG='${{ github.event.inputs.new_tag }}'
+          echo "old tag: $OLD_TAG"
+          echo "new tag: $NEW_TAG"
+          curl -sSL -o old.jar "https://github.com/GUN2RAS/Nostalgia/releases/download/$OLD_TAG/alpha_protocol-1.0.0.jar"
+          curl -sSL -o new.jar "https://github.com/GUN2RAS/Nostalgia/releases/download/$NEW_TAG/alpha_protocol-1.0.0.jar"
+          ls -la old.jar new.jar
+          sha256sum old.jar new.jar | tee out/00-jar-hashes.txt
+
+      - name: Unpack jars
+        run: |
+          set -e
+          cd work
+          mkdir -p old new
+          unzip -q old.jar -d old
+          unzip -q new.jar -d new
+          echo "old entries: $(find old -type f | wc -l)"
+          echo "new entries: $(find new -type f | wc -l)"
+
+      - name: Compare top-level entries
+        run: |
+          set -e
+          cd work
+          (cd old; find . -type f | sort) > old-files.txt
+          (cd new; find . -type f | sort) > new-files.txt
+          comm -13 old-files.txt new-files.txt > added.txt
+          comm -23 old-files.txt new-files.txt > removed.txt
+          : > changed.txt
+          while read -r f; do
+            if [ -f "new/$f" ]; then
+              if ! cmp -s "old/$f" "new/$f"; then
+                echo "$f" >> changed.txt
+              fi
+            fi
+          done < old-files.txt
+          {
+            echo "old entry count: $(wc -l < old-files.txt)"
+            echo "new entry count: $(wc -l < new-files.txt)"
+            echo
+            echo "=== ADDED (only in new jar) ==="
+            cat added.txt
+            echo
+            echo "=== REMOVED (only in old jar) ==="
+            cat removed.txt
+            echo
+            echo "=== CHANGED (present in both, bytes differ) ==="
+            cat changed.txt
+          } | tee out/01-entry-diff.txt
+
+      - name: Diff changed resources as text
+        run: |
+          set -e
+          cd work
+          : > out/02-resource-diff.txt
+          while read -r f; do
+            case "$f" in
+              *.class) continue ;;
+              *.png|*.ogg|*.jar) continue ;;
+            esac
+            {
+              echo "##################################################"
+              echo "# $f"
+              echo "##################################################"
+              diff -u "old/$f" "new/$f" || true
+              echo
+            } >> out/02-resource-diff.txt
+          done < changed.txt
+          echo "resource diff bytes: $(wc -c < out/02-resource-diff.txt)"
+
+      - name: Disassemble changed classes
+        run: |
+          set -e
+          cd work
+          : > out/03-class-diff.txt
+          : > out/04-changed-class-list.txt
+          while read -r f; do
+            case "$f" in
+              *.class) ;;
+              *) continue ;;
+            esac
+            echo "$f" >> out/04-changed-class-list.txt
+            javap -p -c "old/$f" > /tmp/old.txt 2>&1 || true
+            javap -p -c "new/$f" > /tmp/new.txt 2>&1 || true
+            {
+              echo "##################################################"
+              echo "# $f"
+              echo "##################################################"
+              diff -u /tmp/old.txt /tmp/new.txt || true
+              echo
+            } >> out/03-class-diff.txt
+          done < changed.txt
+          echo "changed class count: $(wc -l < out/04-changed-class-list.txt)"
+
+      - name: Compare nested library jars
+        run: |
+          set -e
+          cd work
+          : > out/05-nested-jar-diff.txt
+          for f in $(cat changed.txt added.txt); do
+            case "$f" in
+              *.jar) ;;
+              *) continue ;;
+            esac
+            echo "nested jar: $f" >> out/05-nested-jar-diff.txt
+            rm -rf /tmp/nold /tmp/nnew
+            mkdir -p /tmp/nold /tmp/nnew
+            if [ -f "old/$f" ]; then unzip -q "old/$f" -d /tmp/nold || true; fi
+            if [ -f "new/$f" ]; then unzip -q "new/$f" -d /tmp/nnew || true; fi
+            (cd /tmp/nold; find . -type f | sort) > /tmp/nold.txt || true
+            (cd /tmp/nnew; find . -type f | sort) > /tmp/nnew.txt || true
+            {
+              echo "--- added inside $f ---"
+              comm -13 /tmp/nold.txt /tmp/nnew.txt || true
+              echo "--- removed inside $f ---"
+              comm -23 /tmp/nold.txt /tmp/nnew.txt || true
+              echo "--- changed inside $f ---"
+            } >> out/05-nested-jar-diff.txt
+            while read -r g; do
+              if [ -f "/tmp/nnew/$g" ]; then
+                if ! cmp -s "/tmp/nold/$g" "/tmp/nnew/$g"; then
+                  echo "$g" >> out/05-nested-jar-diff.txt
+                  case "$g" in
+                    *.class)
+                      javap -p -c "/tmp/nold/$g" > /tmp/gold.txt 2>&1 || true
+                      javap -p -c "/tmp/nnew/$g" > /tmp/gnew.txt 2>&1 || true
+                      diff -u /tmp/gold.txt /tmp/gnew.txt >> out/05-nested-jar-diff.txt || true
+                      ;;
+                    *.png|*.ogg) ;;
+                    *)
+                      diff -u "/tmp/nold/$g" "/tmp/nnew/$g" >> out/05-nested-jar-diff.txt || true
+                      ;;
+                  esac
+                fi
+              fi
+            done < /tmp/nold.txt
+            echo >> out/05-nested-jar-diff.txt
+          done
+          echo "nested jar report bytes: $(wc -c < out/05-nested-jar-diff.txt)"
+
+      - name: Compare new jar against published sources
+        run: |
+          set -e
+          cd work
+          NEW_TAG='${{ github.event.inputs.new_tag }}'
+          curl -sSL -o src.zip "https://github.com/GUN2RAS/Nostalgia/archive/refs/tags/$NEW_TAG.zip"
+          mkdir -p src
+          unzip -q src.zip -d src
+          SRC_ROOT=$(find src -maxdepth 1 -mindepth 1 -type d | head -1)
+          echo "source root: $SRC_ROOT"
+          (cd "$SRC_ROOT"; find . -path './src/main/java/*' -name '*.java' | sed 's|^\./src/main/java/||; s|\.java$||' | sort) > src-classes.txt
+          (cd new; find . -name '*.class' | sed 's|^\./||; s|\.class$||' | grep -v '\$' | sort) > jar-classes.txt
+          {
+            echo "java files in published sources: $(wc -l < src-classes.txt)"
+            echo "top-level classes in new jar:    $(wc -l < jar-classes.txt)"
+            echo
+            echo "=== classes present in the jar but MISSING from published sources ==="
+            comm -13 src-classes.txt jar-classes.txt
+            echo
+            echo "=== java files in sources with no class in the jar ==="
+            comm -23 src-classes.txt jar-classes.txt
+          } | tee out/06-jar-vs-sources.txt
+          : > out/07-resource-jar-vs-sources.txt
+          (cd "$SRC_ROOT/src/main/resources"; find . -type f | sort) > src-res.txt
+          while read -r r; do
+            rel=$(echo "$r" | sed 's|^\./||')
+            if [ -f "new/$rel" ]; then
+              if ! cmp -s "$SRC_ROOT/src/main/resources/$rel" "new/$rel"; then
+                echo "DIFFERS $rel" >> out/07-resource-jar-vs-sources.txt
+              fi
+            else
+              echo "NOT-IN-JAR $rel" >> out/07-resource-jar-vs-sources.txt
+            fi
+          done < src-res.txt
+          echo "resource mismatches: $(wc -l < out/07-resource-jar-vs-sources.txt)"
+
+      - name: Summarise
+        run: |
+          set -e
+          cd work
+          {
+            echo "===== SUMMARY ====="
+            cat out/00-jar-hashes.txt
+            echo
+            echo "added entries:   $(wc -l < added.txt)"
+            echo "removed entries: $(wc -l < removed.txt)"
+            echo "changed entries: $(wc -l < changed.txt)"
+            echo "changed classes: $(wc -l < out/04-changed-class-list.txt)"
+            echo
+            echo "--- changed class names ---"
+            cat out/04-changed-class-list.txt
+            echo
+            echo "--- all changed entries ---"
+            cat changed.txt
+          } | tee out/08-summary.txt
+
+      - name: Upload comparison report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-jar-diff
+          path: work/out
+          if-no-files-found: warn
