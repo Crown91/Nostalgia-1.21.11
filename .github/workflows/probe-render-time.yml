@@ -1,0 +1,247 @@
+# One-off fact finder. Run it from the Actions tab and download the
+# "render-time-probe" artifact.
+#
+# It answers two questions that cannot be answered by reading the mod:
+#
+#   1. How does 1.21.11 decide that a block is cutout instead of solid?
+#      The "render_type" field the 26.1.2 models rely on is clearly ignored,
+#      so we need the real class, the real enum and the Fabric API entry point.
+#
+#   2. Which method feeds the day time into the environment attribute system?
+#      Sky colour and light are sampled through a LongSupplier, and the ritual
+#      rewind has to hook exactly that method - not a neighbouring one.
+name: probe-render-time
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Minecraft version to pull vanilla assets from
+        required: false
+        default: '1.21.11'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 22
+        uses: actions/setup-java@v4
+        with:
+          java-version: '22'
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.1'
+
+      # Only needed to make Loom materialise the mapped Minecraft jar and pull
+      # the Fabric API jars into the cache. Compilation output is irrelevant
+      # here, so a failure must not stop the probe.
+      - name: Populate the dependency cache
+        id: warmup
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          chmod +x gradlew || true
+          ./gradlew classes --no-daemon --stacktrace 2>&1 | tail -40
+
+      - name: Probe the render layer plumbing
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          mkdir -p probe
+          OUT=probe/render-layer.txt
+          : > "$OUT"
+
+          LOOM_JARS=$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null | head -100)
+          FABRIC_JARS=$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -300)
+
+          # The mapped, merged Minecraft jar. Intermediary jars only carry
+          # class_1234 names and are useless as a porting reference.
+          MC_JAR=""
+          for J in $LOOM_JARS; do
+            case "$J" in *intermediary*) continue;; esac
+            if unzip -l "$J" 2>/dev/null | grep -q 'net/minecraft/client/renderer/LevelRenderer.class'; then
+              MC_JAR="$J"
+              break
+            fi
+          done
+          echo "# minecraft jar: ${MC_JAR:-NONE FOUND}" >> "$OUT"
+
+          if [ -n "$MC_JAR" ]; then
+            echo "" >> "$OUT"
+            echo "########## every class whose name mentions a render layer or type ##########" >> "$OUT"
+            unzip -l "$MC_JAR" 2>/dev/null | awk '{print $4}' \
+              | grep -E '\.class$' \
+              | grep -iE 'itemblockrendertypes|chunksectionlayer|blockrenderlayer|rendertype' >> "$OUT" || true
+
+            echo "" >> "$OUT"
+            echo "########## signatures ##########" >> "$OUT"
+            # ItemBlockRenderTypes is where vanilla hardcodes cutout per block,
+            # so it is both the answer and the mixin target of last resort.
+            for C in \
+              net.minecraft.client.renderer.ItemBlockRenderTypes \
+              net.minecraft.client.renderer.chunk.ChunkSectionLayer \
+              net.minecraft.client.renderer.block.BlockRenderDispatcher \
+              net.minecraft.client.renderer.block.model.BlockStateModel \
+              net.minecraft.client.renderer.block.model.BlockModel ; do
+              echo "" >> "$OUT"
+              echo "===== $C =====" >> "$OUT"
+              javap -p -cp "$MC_JAR" "$C" >> "$OUT" 2>&1
+            done
+
+            # How vanilla itself marks a cutout block on this exact version.
+            echo "" >> "$OUT"
+            echo "########## disassembly of the vanilla block -> layer table ##########" >> "$OUT"
+            javap -c -p -cp "$MC_JAR" net.minecraft.client.renderer.ItemBlockRenderTypes \
+              >> "$OUT" 2>&1 || true
+          fi
+
+          echo "" >> "$OUT"
+          echo "########## Fabric API: block render layer entry point ##########" >> "$OUT"
+          for J in $FABRIC_JARS; do
+            HITS=$(unzip -l "$J" 2>/dev/null | awk '{print $4}' \
+              | grep -E '\.class$' | grep -iE 'blockrenderlayermap|renderlayer' || true)
+            if [ -n "$HITS" ]; then
+              echo "" >> "$OUT"
+              echo "--- jar: $J" >> "$OUT"
+              echo "$HITS" >> "$OUT"
+              for CL in $HITS; do
+                CN=$(echo "${CL%.class}" | tr '/' '.')
+                echo "" >> "$OUT"
+                echo "===== $CN =====" >> "$OUT"
+                javap -p -cp "$J" "$CN" >> "$OUT" 2>&1
+              done
+            fi
+          done
+
+          # If any Fabric jar still contains the literal "render_type", the model
+          # field is still supported and the bug is elsewhere. If nothing does,
+          # the field is dead on this version and registration must move to code.
+          echo "" >> "$OUT"
+          echo "########## does any Fabric API jar still know the string render_type? ##########" >> "$OUT"
+          for J in $FABRIC_JARS; do
+            if unzip -p "$J" '*.class' 2>/dev/null | strings | grep -q 'render_type'; then
+              echo "YES  $J" >> "$OUT"
+            fi
+          done
+          echo "(no YES lines above means the render_type model field is gone)" >> "$OUT"
+          echo "render layer probe complete"
+
+      - name: Probe the day-time plumbing
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          mkdir -p probe
+          OUT=probe/day-time.txt
+          : > "$OUT"
+
+          LOOM_JARS=$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null | head -100)
+          MC_JAR=""
+          for J in $LOOM_JARS; do
+            case "$J" in *intermediary*) continue;; esac
+            if unzip -l "$J" 2>/dev/null | grep -q 'net/minecraft/client/renderer/LevelRenderer.class'; then
+              MC_JAR="$J"
+              break
+            fi
+          done
+          echo "# minecraft jar: ${MC_JAR:-NONE FOUND}" >> "$OUT"
+
+          if [ -n "$MC_JAR" ]; then
+            # Bytecode, not signatures: the question is which method the
+            # LongSupplier behind AttributeTrackSampler.dayTimeGetter calls.
+            for C in \
+              net.minecraft.world.timeline.Timeline \
+              net.minecraft.world.timeline.AttributeTrack \
+              net.minecraft.world.timeline.AttributeTrackSampler \
+              net.minecraft.world.attribute.EnvironmentAttributeSystem ; do
+              echo "" >> "$OUT"
+              echo "########## $C (disassembled) ##########" >> "$OUT"
+              javap -c -p -cp "$MC_JAR" "$C" >> "$OUT" 2>&1
+            done
+
+            echo "" >> "$OUT"
+            echo "########## ClientLevel.tickTime and friends (disassembled) ##########" >> "$OUT"
+            javap -c -p -cp "$MC_JAR" net.minecraft.client.multiplayer.ClientLevel >> "$OUT" 2>&1
+          fi
+          echo "day time probe complete"
+
+      - name: Pull the vanilla cutout assets for comparison
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          mkdir -p probe
+          OUT=probe/vanilla-assets.txt
+          : > "$OUT"
+          VERSION="${{ github.event.inputs.version || '1.21.11' }}"
+          curl -sSL -o manifest.json \
+            https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
+          META=$(jq -r --arg v "$VERSION" '.versions[] | select(.id == $v) | .url' manifest.json)
+          if [ -z "$META" ] || [ "$META" = "null" ]; then
+            echo "version $VERSION not in manifest" >> "$OUT"
+            exit 0
+          fi
+          curl -sSL -o version.json "$META"
+          curl -sSL -o client.jar "$(jq -r '.downloads.client.url' version.json)"
+          mkdir -p vanilla
+          unzip -o client.jar 'assets/minecraft/models/block/*' 'assets/minecraft/blockstates/*' \
+            -d vanilla > /dev/null 2>&1 || true
+          # These are the vanilla equivalents of the broken alpha plants. If they
+          # carry no render_type field, cutout is decided in code, full stop.
+          for F in \
+            assets/minecraft/models/block/cross.json \
+            assets/minecraft/models/block/dandelion.json \
+            assets/minecraft/models/block/poppy.json \
+            assets/minecraft/models/block/brown_mushroom.json \
+            assets/minecraft/models/block/sugar_cane.json \
+            assets/minecraft/models/block/wheat_stage0.json \
+            assets/minecraft/models/block/crop.json \
+            assets/minecraft/blockstates/poppy.json \
+            assets/minecraft/blockstates/sugar_cane.json \
+            assets/minecraft/blockstates/wheat.json ; do
+            echo "" >> "$OUT"
+            echo "===== $F =====" >> "$OUT"
+            if [ -f "vanilla/$F" ]; then
+              cat "vanilla/$F" >> "$OUT"
+            else
+              echo "(not present in the client jar)" >> "$OUT"
+            fi
+          done
+          echo "" >> "$OUT"
+          echo "########## any vanilla model mentioning render_type at all ##########" >> "$OUT"
+          grep -rl 'render_type' vanilla/assets/minecraft/models 2>/dev/null | head -20 >> "$OUT" || true
+          echo "(empty means vanilla never uses the field)" >> "$OUT"
+          echo "vanilla asset probe complete"
+
+      - name: Summarise
+        if: always()
+        continue-on-error: true
+        run: |
+          {
+            echo "### render layer probe"
+            echo '```'
+            grep -E '^(YES|=====|#|\(no YES)' probe/render-layer.txt 2>/dev/null | head -80 || true
+            echo '```'
+            echo "### vanilla plant models"
+            echo '```'
+            head -80 probe/vanilla-assets.txt 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          ls -la probe || true
+
+      - name: Upload the probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-time-probe
+          path: probe/
+          if-no-files-found: warn
+          retention-days: 30
