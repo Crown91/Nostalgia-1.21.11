@@ -22,6 +22,7 @@ public final class AlphaRenderLayers implements ClientModInitializer {
         @Override
         public void onInitializeClient() {
                 register();
+                AlphaFluidRendering.register();
         }
 
         public static void register() {
