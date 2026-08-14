@@ -20,19 +20,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download the upstream jar
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           mkdir -p up out
-          URL="https://github.com/GUN2RAS/Nostalgia/releases/download/${{ inputs.tag }}/alpha_protocol-1.0.0.jar"
+          HOST='https://github.com'
+          REPO='GUN2RAS/Nostalgia'
+          ASSET='alpha_protocol-1.0.0.jar'
+          URL="$HOST/$REPO/releases/download/$TAG/$ASSET"
           echo "downloading $URL"
-          curl -sSL -o up/upstream.jar "$URL"
+          curl -sSL --fail -o up/upstream.jar "$URL"
           ls -l up/upstream.jar
           sha256sum up/upstream.jar
+          # A GitHub error page would also be written to the file, so make sure
+          # what arrived is really a zip archive before anything reads it.
+          file up/upstream.jar
+          unzip -t up/upstream.jar > /dev/null
 
       - name: Compare block models with this port
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           OUT=out/upstream-models.txt
           : > "$OUT"
-          echo "tag: ${{ inputs.tag }}" >> "$OUT"
+          echo "tag: $TAG" >> "$OUT"
           sha256sum up/upstream.jar >> "$OUT"
 
           mkdir -p up/x
@@ -45,8 +56,8 @@ jobs:
           echo "jar  blockstates:  $(ls up/x/assets/nostalgia/blockstates 2>/dev/null | wc -l)" >> "$OUT"
           echo "port blockstates:  $(ls src/main/resources/assets/nostalgia/blockstates 2>/dev/null | wc -l)" >> "$OUT"
 
-          # The five models the game asks for and cannot find, plus the door and
-          # time machine. If the jar has them, they are simply unpublished.
+          # The models the game asks for and cannot find. If the jar has them,
+          # they are simply part of the unpublished upstream work.
           echo "" >> "$OUT"
           echo "########## the models our launch log reports as missing ##########" >> "$OUT"
           for M in time_machine alpha_cactus_flipped alpha_grass_block_flipped \
@@ -88,7 +99,7 @@ jobs:
           ls up/x/assets/nostalgia/items 2>/dev/null >> "$OUT" || echo "no items/ directory" >> "$OUT"
 
           # The time machine renders with RenderShape.MODEL and registers no
-          # block entity renderer, so whatever the jar has here is the answer.
+          # block entity renderer, so whatever the jar ships here is the answer.
           echo "" >> "$OUT"
           echo "########## every jar file whose name mentions time_machine ##########" >> "$OUT"
           unzip -l up/upstream.jar 2>/dev/null | awk '{print $4}' | grep -i 'time_machine' >> "$OUT" || true
