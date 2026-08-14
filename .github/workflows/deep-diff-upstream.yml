@@ -1,0 +1,163 @@
+name: Deep diff upstream classes
+
+on:
+  workflow_dispatch:
+    inputs:
+      old_tag:
+        description: "Older upstream release tag"
+        default: "scr-2"
+        required: true
+      new_tag:
+        description: "Newer upstream release tag"
+        default: "scr-3"
+        required: true
+
+jobs:
+  deepdiff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '22'
+
+      - name: Download jars and decompilers
+        run: |
+          set -e
+          mkdir -p work/out
+          cd work
+          OLD_TAG='${{ github.event.inputs.old_tag }}'
+          NEW_TAG='${{ github.event.inputs.new_tag }}'
+          curl -sSL -o old.jar "https://github.com/GUN2RAS/Nostalgia/releases/download/$OLD_TAG/alpha_protocol-1.0.0.jar"
+          curl -sSL -o new.jar "https://github.com/GUN2RAS/Nostalgia/releases/download/$NEW_TAG/alpha_protocol-1.0.0.jar"
+          curl -sSL -o cfr.jar "https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar"
+          curl -sSL -o vineflower.jar "https://repo1.maven.org/maven2/org/vineflower/vineflower/1.10.1/vineflower-1.10.1.jar"
+          ls -la *.jar | tee out/00-downloads.txt
+
+      - name: Unpack jars
+        run: |
+          set -e
+          cd work
+          mkdir -p old new
+          unzip -q old.jar -d old
+          unzip -q new.jar -d new
+
+      - name: Report raw sizes of changed classes
+        run: |
+          set -e
+          cd work
+          {
+            echo "=== raw class file sizes (old vs new) ==="
+            for t in \
+              net/nostalgia/NostalgiaClient \
+              net/nostalgia/client/gui/TimeMachineScreen \
+              'net/nostalgia/client/gui/TimeMachineScreen$MonitorState' \
+              net/nostalgia/mixin/EntityGravityAnomalyMixin \
+              net/nostalgia/network/NostalgiaClientNetworking ; do
+              o=$(stat -c '%s' "old/$t.class" 2>/dev/null || echo missing)
+              n=$(stat -c '%s' "new/$t.class" 2>/dev/null || echo missing)
+              echo "$t  old=$o  new=$n"
+            done
+          } | tee out/01-class-sizes.txt
+
+      - name: javap verbose diff with sanity check
+        run: |
+          set -e
+          cd work
+          : > out/02-javap-verbose-diff.txt
+          for t in \
+            net/nostalgia/NostalgiaClient \
+            net/nostalgia/client/gui/TimeMachineScreen \
+            'net/nostalgia/client/gui/TimeMachineScreen$MonitorState' \
+            net/nostalgia/mixin/EntityGravityAnomalyMixin \
+            net/nostalgia/network/NostalgiaClientNetworking ; do
+            javap -p -c -v -l "old/$t.class" > /tmp/o.txt 2>&1 || true
+            javap -p -c -v -l "new/$t.class" > /tmp/n.txt 2>&1 || true
+            {
+              echo "##################################################"
+              echo "# $t"
+              echo "# javap output lines: old=$(wc -l < /tmp/o.txt) new=$(wc -l < /tmp/n.txt)"
+              echo "# first line old: $(head -1 /tmp/o.txt)"
+              echo "##################################################"
+              diff -u /tmp/o.txt /tmp/n.txt || true
+              echo
+            } >> out/02-javap-verbose-diff.txt
+          done
+          echo "javap verbose diff bytes: $(wc -c < out/02-javap-verbose-diff.txt)"
+
+      - name: Decompile changed classes with CFR
+        run: |
+          set -e
+          cd work
+          mkdir -p out/cfr
+          : > out/03-cfr-diff.txt
+          for t in \
+            net/nostalgia/NostalgiaClient \
+            net/nostalgia/client/gui/TimeMachineScreen \
+            net/nostalgia/mixin/EntityGravityAnomalyMixin \
+            net/nostalgia/network/NostalgiaClientNetworking ; do
+            base=$(basename "$t")
+            java -jar cfr.jar "old/$t.class" --extraclasspath old.jar --comments false > "out/cfr/$base.old.java" 2>/dev/null || true
+            java -jar cfr.jar "new/$t.class" --extraclasspath new.jar --comments false > "out/cfr/$base.new.java" 2>/dev/null || true
+            {
+              echo "##################################################"
+              echo "# $t"
+              echo "# decompiled lines: old=$(wc -l < out/cfr/$base.old.java) new=$(wc -l < out/cfr/$base.new.java)"
+              echo "##################################################"
+              diff -u "out/cfr/$base.old.java" "out/cfr/$base.new.java" || true
+              echo
+            } >> out/03-cfr-diff.txt
+          done
+          echo "cfr diff bytes: $(wc -c < out/03-cfr-diff.txt)"
+
+      - name: Decompile changed classes with Vineflower
+        run: |
+          set -e
+          cd work
+          for side in old new; do
+            mkdir -p $side-sel/net/nostalgia/client/gui $side-sel/net/nostalgia/mixin $side-sel/net/nostalgia/network
+            cp "$side/net/nostalgia/NostalgiaClient.class" "$side-sel/net/nostalgia/" || true
+            cp "$side"/net/nostalgia/client/gui/TimeMachineScreen*.class "$side-sel/net/nostalgia/client/gui/" || true
+            cp "$side/net/nostalgia/mixin/EntityGravityAnomalyMixin.class" "$side-sel/net/nostalgia/mixin/" || true
+            cp "$side"/net/nostalgia/network/NostalgiaClientNetworking*.class "$side-sel/net/nostalgia/network/" || true
+            mkdir -p $side-vf
+            java -jar vineflower.jar -e=$side.jar "$side-sel" "$side-vf" > /dev/null 2>&1 || true
+          done
+          mkdir -p out/vineflower
+          cp -r old-vf out/vineflower/old || true
+          cp -r new-vf out/vineflower/new || true
+          : > out/04-vineflower-diff.txt
+          (cd old-vf; find . -name '*.java' | sort) > /tmp/vf.txt || true
+          while read -r j; do
+            {
+              echo "##################################################"
+              echo "# $j"
+              echo "##################################################"
+              diff -u "old-vf/$j" "new-vf/$j" || true
+              echo
+            } >> out/04-vineflower-diff.txt
+          done < /tmp/vf.txt
+          echo "vineflower diff bytes: $(wc -c < out/04-vineflower-diff.txt)"
+
+      - name: Summarise
+        run: |
+          set -e
+          cd work
+          {
+            echo "===== DEEP DIFF SUMMARY ====="
+            cat out/01-class-sizes.txt
+            echo
+            echo "javap verbose diff bytes:  $(wc -c < out/02-javap-verbose-diff.txt)"
+            echo "cfr diff bytes:            $(wc -c < out/03-cfr-diff.txt)"
+            echo "vineflower diff bytes:     $(wc -c < out/04-vineflower-diff.txt)"
+          } | tee out/05-summary.txt
+
+      - name: Upload deep diff report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-deep-diff
+          path: work/out
+          if-no-files-found: warn
