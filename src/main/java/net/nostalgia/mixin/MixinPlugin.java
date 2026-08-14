@@ -88,8 +88,9 @@ public class MixinPlugin implements IMixinConfigPlugin {
         // Same story for Sodium. These mixins reach into Sodium internals, so
         // without Sodium present the target classes are missing and the game
         // would hard-crash instead of quietly running without them.
+        // Water no longer needs a Sodium mixin: AlphaFluidRendering registers a
+        // fabric-rendering-fluids-v1 handler, which Sodium honours by itself.
         if (mixinClassName.startsWith("net.nostalgia.mixin.client.frozen.sodium.")
-                || mixinClassName.equals("net.nostalgia.mixin.alpha.AlphaSodiumWaterMixin")
                 || mixinClassName.equals("net.nostalgia.mixin.alpha.AlphaSodiumLightMixin")
                 || mixinClassName.equals("net.nostalgia.mixin.rd132211.RdSodiumAOMixin")) {
             return FabricLoader.getInstance().isModLoaded("sodium");

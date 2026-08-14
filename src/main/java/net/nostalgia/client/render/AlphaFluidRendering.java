@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.fabricmc.fabric.api.client.render.fluid.v1.SimpleFluidRenderHandler;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -12,22 +13,30 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.nostalgia.alphalogic.ritual.TickRateManagerAccess;
 import net.nostalgia.alphalogic.ritual.event.ClientEchoRitualView;
 import net.nostalgia.client.events.core.ClientRitualEventRegistry;
+import net.nostalgia.client.frozen.FrozenSpriteRegistry;
 import net.nostalgia.world.dimension.ModDimensions;
 
 /**
- * Swaps the water sprites for the alpha ones inside the alpha dimension.
+ * Swaps the water sprites for the alpha ones inside the alpha dimension, and for the frozen
+ * snapshots inside an active time-stop zone.
  *
- * <p>Replaces {@code AlphaWaterRendererMixin} and {@code AlphaSodiumWaterMixin}. Those two mixins
- * patched {@code FluidRenderer#tesselate} and Sodium's fluid render context to return a custom
- * {@code FluidModel}. In 1.21.11 there is no {@code FluidRenderer}, no {@code FluidModel} and no
+ * <p>Replaces {@code AlphaWaterRendererMixin}, {@code AlphaSodiumWaterMixin} and
+ * {@code client.frozen.sodium.DefaultFluidRendererMixin}. Those mixins patched
+ * {@code FluidRenderer#tesselate} and Sodium internals to return a custom {@code FluidModel}. In
+ * 1.21.11 there is no {@code FluidRenderer}, no {@code FluidModel} and no
  * {@code FluidStateModelSet}; water is drawn by {@code LiquidBlockRenderer}. What does exist is
  * {@code fabric-rendering-fluids-v1}, and Sodium honours it: its
  * {@code FluidRendererImpl$DefaultRenderContext} implements {@code FluidRendering.DefaultRenderer}
  * and takes its sprite array straight from the registered {@link FluidRenderHandler}. So a single
  * handler covers the vanilla renderer and the Sodium renderer at once, with no mixin and no
  * dependency on either one's internals.
+ *
+ * <p>The frozen swap is done here rather than in Sodium's {@code writeQuad} because returning the
+ * frozen sprite from {@link #getFluidSprites} lets each renderer compute its own UVs. The 26.1
+ * mixin had to rescale the four vertex UVs by hand after the fact; that whole step disappears.
  *
  * <p>The sprite array layout is the one {@link SimpleFluidRenderHandler} uses: still, flowing,
  * overlay.
@@ -67,7 +76,8 @@ public final class AlphaFluidRendering implements FluidRenderHandler {
         @Override
         public TextureAtlasSprite[] getFluidSprites(BlockAndTintGetter level, BlockPos pos,
                         FluidState fluidState) {
-                return isAlphaWater(pos) ? this.alphaSprites : this.vanillaSprites;
+                TextureAtlasSprite[] base = isAlphaWater(pos) ? this.alphaSprites : this.vanillaSprites;
+                return applyFrozenSprites(base, pos);
         }
 
         @Override
@@ -80,6 +90,45 @@ public final class AlphaFluidRendering implements FluidRenderHandler {
                 }
 
                 return BiomeColors.getAverageWaterColor(level, pos);
+        }
+
+        /**
+         * Replaces the sprites with their frozen snapshots when this block sits inside a time-stop
+         * zone. Gating order is copied from {@code DefaultFluidRendererMixin}: bail out as early as
+         * possible so the common case costs one boolean read.
+         */
+        private static TextureAtlasSprite[] applyFrozenSprites(TextureAtlasSprite[] base, BlockPos pos) {
+                if (!FrozenSpriteRegistry.hasAnyMappings()) {
+                        return base;
+                }
+
+                ClientLevel level = Minecraft.getInstance().level;
+                if (level == null) {
+                        return base;
+                }
+                if (!(level.tickRateManager() instanceof TickRateManagerAccess access)) {
+                        return base;
+                }
+                if (!access.nostalgia$hasRegions()) {
+                        return base;
+                }
+                if (!access.nostalgia$isBlockFrozen(level.dimension(), pos)) {
+                        return base;
+                }
+
+                TextureAtlasSprite[] swapped = null;
+                for (int i = 0; i < base.length; i++) {
+                        TextureAtlasSprite frozen = FrozenSpriteRegistry.getFrozenFor(base[i]);
+                        if (frozen == null) {
+                                continue;
+                        }
+                        if (swapped == null) {
+                                swapped = base.clone();
+                        }
+                        swapped[i] = frozen;
+                }
+
+                return swapped == null ? base : swapped;
         }
 
         /**
