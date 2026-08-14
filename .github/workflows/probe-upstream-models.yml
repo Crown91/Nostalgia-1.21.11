@@ -1,0 +1,105 @@
+name: probe upstream models
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'upstream release tag to inspect'
+        required: true
+        default: 'scr-3'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout this port
+        uses: actions/checkout@v4
+
+      - name: Download the upstream jar
+        run: |
+          mkdir -p up out
+          URL="https://github.com/GUN2RAS/Nostalgia/releases/download/${{ inputs.tag }}/alpha_protocol-1.0.0.jar"
+          echo "downloading $URL"
+          curl -sSL -o up/upstream.jar "$URL"
+          ls -l up/upstream.jar
+          sha256sum up/upstream.jar
+
+      - name: Compare block models with this port
+        run: |
+          OUT=out/upstream-models.txt
+          : > "$OUT"
+          echo "tag: ${{ inputs.tag }}" >> "$OUT"
+          sha256sum up/upstream.jar >> "$OUT"
+
+          mkdir -p up/x
+          ( cd up/x && unzip -q ../upstream.jar 'assets/nostalgia/models/*' 'assets/nostalgia/blockstates/*' 'assets/nostalgia/items/*' || true )
+
+          echo "" >> "$OUT"
+          echo "########## counts ##########" >> "$OUT"
+          echo "jar  block models: $(ls up/x/assets/nostalgia/models/block 2>/dev/null | wc -l)" >> "$OUT"
+          echo "port block models: $(ls src/main/resources/assets/nostalgia/models/block 2>/dev/null | wc -l)" >> "$OUT"
+          echo "jar  blockstates:  $(ls up/x/assets/nostalgia/blockstates 2>/dev/null | wc -l)" >> "$OUT"
+          echo "port blockstates:  $(ls src/main/resources/assets/nostalgia/blockstates 2>/dev/null | wc -l)" >> "$OUT"
+
+          # The five models the game asks for and cannot find, plus the door and
+          # time machine. If the jar has them, they are simply unpublished.
+          echo "" >> "$OUT"
+          echo "########## the models our launch log reports as missing ##########" >> "$OUT"
+          for M in time_machine alpha_cactus_flipped alpha_grass_block_flipped \
+                   alpha_red_flower_flipped alpha_sugar_cane_flipped \
+                   alpha_yellow_flower_flipped alpha_oak_door_bottom_left \
+                   alpha_wheat_crop alpha_iron_bars ; do
+            F="up/x/assets/nostalgia/models/block/$M.json"
+            echo "" >> "$OUT"
+            echo "===== models/block/$M.json =====" >> "$OUT"
+            if [ -f "$F" ]; then
+              echo "PRESENT in the upstream jar:" >> "$OUT"
+              cat "$F" >> "$OUT"
+            else
+              echo "ABSENT from the upstream jar too" >> "$OUT"
+            fi
+          done
+
+          # Full model list difference. Process substitution is avoided on
+          # purpose; plain sorted files behave the same everywhere.
+          ls up/x/assets/nostalgia/models/block 2>/dev/null | sort > /tmp/jar-models.txt || true
+          ls src/main/resources/assets/nostalgia/models/block 2>/dev/null | sort > /tmp/port-models.txt || true
+          echo "" >> "$OUT"
+          echo "########## models in the jar but NOT in this port ##########" >> "$OUT"
+          comm -23 /tmp/jar-models.txt /tmp/port-models.txt >> "$OUT" || true
+          echo "" >> "$OUT"
+          echo "########## models in this port but NOT in the jar ##########" >> "$OUT"
+          comm -13 /tmp/jar-models.txt /tmp/port-models.txt >> "$OUT" || true
+
+          ls up/x/assets/nostalgia/blockstates 2>/dev/null | sort > /tmp/jar-bs.txt || true
+          ls src/main/resources/assets/nostalgia/blockstates 2>/dev/null | sort > /tmp/port-bs.txt || true
+          echo "" >> "$OUT"
+          echo "########## blockstates in the jar but NOT in this port ##########" >> "$OUT"
+          comm -23 /tmp/jar-bs.txt /tmp/port-bs.txt >> "$OUT" || true
+
+          # 1.21.9 moved item models to assets/<ns>/items/. Whatever 26.1 used
+          # is worth seeing, since our item warnings may come from there.
+          echo "" >> "$OUT"
+          echo "########## items/ entries in the jar ##########" >> "$OUT"
+          ls up/x/assets/nostalgia/items 2>/dev/null >> "$OUT" || echo "no items/ directory" >> "$OUT"
+
+          # The time machine renders with RenderShape.MODEL and registers no
+          # block entity renderer, so whatever the jar has here is the answer.
+          echo "" >> "$OUT"
+          echo "########## every jar file whose name mentions time_machine ##########" >> "$OUT"
+          unzip -l up/upstream.jar 2>/dev/null | awk '{print $4}' | grep -i 'time_machine' >> "$OUT" || true
+
+          wc -l "$OUT"
+
+      - name: Upload the probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-models
+          path: out/
+          if-no-files-found: warn
+          retention-days: 30
