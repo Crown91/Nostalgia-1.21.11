@@ -1,0 +1,155 @@
+name: probe fluids
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 22
+        uses: actions/setup-java@v4
+        with:
+          java-version: '22'
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.1'
+
+      # The dump below reads the jars Loom puts in the Gradle cache, so a
+      # dependency-resolving task has to run first. compileJava is enough and
+      # is far quicker than a full build.
+      - name: Populate the Loom caches
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version 9.4.1 --distribution-type bin
+          fi
+          chmod +x gradlew || true
+          ./gradlew compileJava --no-daemon --stacktrace 2>&1 | tail -60
+
+      - name: Probe the fluid rendering API
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          mkdir -p out
+          OUT=out/fluid-api.txt
+          : > "$OUT"
+          LOOM_JARS="$(find ~/.gradle/caches/fabric-loom -name '*.jar' 2>/dev/null | head -100)"
+          FABRIC_JARS="$(find ~/.gradle/caches/modules-2 -path '*fabric*' -name '*.jar' 2>/dev/null | head -200)"
+          ALL_JARS="$LOOM_JARS $FABRIC_JARS"
+          echo "searching $(echo $ALL_JARS | wc -w) jars" >> "$OUT"
+
+          # ---------------- vanilla ----------------
+          MC_JAR=""
+          for J in $ALL_JARS; do
+            case "$J" in *intermediary*) continue;; esac
+            if unzip -l "$J" 2>/dev/null | grep -q 'net/minecraft/client/renderer/LevelRenderer.class'; then
+              MC_JAR="$J"
+              break
+            fi
+          done
+          echo "" >> "$OUT"
+          echo "########## MC JAR ##########" >> "$OUT"
+          echo "$MC_JAR" >> "$OUT"
+          if [ -n "$MC_JAR" ]; then
+            echo "" >> "$OUT"
+            echo "########## every MC class matching fluid / liquid / water ##########" >> "$OUT"
+            unzip -l "$MC_JAR" 2>/dev/null | awk '{print $4}' | grep '\.class$' \
+              | grep -iE 'fluid|liquid|water' >> "$OUT" || true
+            echo "" >> "$OUT"
+            echo "########## MC classes matching atlas / sprite / tint ##########" >> "$OUT"
+            unzip -l "$MC_JAR" 2>/dev/null | awk '{print $4}' | grep '\.class$' \
+              | grep -iE 'atlas|tintsource|/sprite/' >> "$OUT" || true
+            for C in \
+              net.minecraft.client.renderer.block.LiquidBlockRenderer \
+              net.minecraft.client.renderer.block.BlockRenderDispatcher \
+              net.minecraft.client.resources.model.ModelManager \
+              net.minecraft.client.renderer.texture.TextureAtlas \
+              net.minecraft.client.renderer.texture.TextureAtlasSprite \
+              net.minecraft.world.level.material.FluidState \
+              net.minecraft.world.level.material.Fluids \
+              net.minecraft.world.level.BlockAndTintGetter ; do
+              echo "" >> "$OUT"
+              echo "========== $C ==========" >> "$OUT"
+              javap -p -cp "$MC_JAR" "$C" >> "$OUT" 2>&1
+            done
+            echo "" >> "$OUT"
+            echo "========== Minecraft: atlas / model / sprite members only ==========" >> "$OUT"
+            javap -p -cp "$MC_JAR" net.minecraft.client.Minecraft 2>&1 \
+              | grep -iE 'atlas|model|sprite' >> "$OUT" || true
+          fi
+
+          # ---------------- Sodium ----------------
+          SODIUM_JAR="$(find ~/.gradle/caches -iname '*sodium*.jar' 2>/dev/null | grep -v sources | head -1)"
+          echo "" >> "$OUT"
+          echo "########## SODIUM JAR ##########" >> "$OUT"
+          echo "$SODIUM_JAR" >> "$OUT"
+          if [ -n "$SODIUM_JAR" ]; then
+            echo "" >> "$OUT"
+            echo "########## every Sodium class matching fluid ##########" >> "$OUT"
+            unzip -l "$SODIUM_JAR" 2>/dev/null | awk '{print $4}' | grep '\.class$' \
+              | grep -iE 'fluid' >> "$OUT" || true
+            for C in \
+              net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer \
+              net.caffeinemc.mods.sodium.fabric.render.FluidRendererImpl \
+              'net.caffeinemc.mods.sodium.fabric.render.FluidRendererImpl$DefaultRenderContext' \
+              net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder \
+              'net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder$Vertex' \
+              net.caffeinemc.mods.sodium.client.model.color.ColorProvider ; do
+              echo "" >> "$OUT"
+              echo "========== $C ==========" >> "$OUT"
+              javap -p -cp "$SODIUM_JAR" "$C" >> "$OUT" 2>&1
+            done
+          fi
+
+          # ---------------- Fabric API ----------------
+          # In 1.21.x the supported way to replace a fluid's sprites is the
+          # fabric-rendering-fluids-v1 handler registry, which Sodium honours.
+          # If it exists here, it may replace both water mixins outright.
+          echo "" >> "$OUT"
+          echo "########## Fabric jars matching fluid ##########" >> "$OUT"
+          FLUID_FABRIC_JARS="$(echo "$FABRIC_JARS" | tr ' ' '\n' | grep -i fluid || true)"
+          echo "$FLUID_FABRIC_JARS" >> "$OUT"
+          for J in $FLUID_FABRIC_JARS; do
+            echo "" >> "$OUT"
+            echo "===== contents of $J =====" >> "$OUT"
+            unzip -l "$J" 2>/dev/null | awk '{print $4}' | grep '\.class$' >> "$OUT" || true
+            for C in \
+              net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry \
+              net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler \
+              net.fabricmc.fabric.api.client.render.fluid.v1.SimpleFluidRenderHandler ; do
+              echo "" >> "$OUT"
+              echo "========== $C ==========" >> "$OUT"
+              javap -p -cp "$J" "$C" >> "$OUT" 2>&1
+            done
+          done
+
+          # ---------------- our own resources ----------------
+          # The alpha water textures and their .mcmeta animations must be present
+          # in the port, or a correct mixin will still render nothing.
+          echo "" >> "$OUT"
+          echo "########## alpha water resources in this repository ##########" >> "$OUT"
+          find src/main/resources -iname '*alpha_water*' >> "$OUT" 2>/dev/null || true
+
+          echo "probe complete"
+          wc -l "$OUT"
+
+      - name: Upload the probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluid-probe
+          path: out/
+          if-no-files-found: warn
+          retention-days: 30
