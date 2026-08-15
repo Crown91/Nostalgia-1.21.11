@@ -12,6 +12,11 @@ public class LegacyRuleSet {
     public final boolean legacyChest;
     public final boolean legacySounds;
     public final boolean farmlandTrampleOnWalk;
+    public final boolean disableSweepAttack;
+    public final boolean legacyKnockback;
+    public final boolean disableAttackSounds;
+    public final boolean legacySkeleton;
+    public final boolean legacyMobAI;
 
     private LegacyRuleSet(Builder builder) {
         this.disableCriticalHits = builder.disableCriticalHits;
@@ -25,6 +30,11 @@ public class LegacyRuleSet {
         this.legacyChest = builder.legacyChest;
         this.legacySounds = builder.legacySounds;
         this.farmlandTrampleOnWalk = builder.farmlandTrampleOnWalk;
+        this.disableSweepAttack = builder.disableSweepAttack;
+        this.legacyKnockback = builder.legacyKnockback;
+        this.disableAttackSounds = builder.disableAttackSounds;
+        this.legacySkeleton = builder.legacySkeleton;
+        this.legacyMobAI = builder.legacyMobAI;
     }
 
     public static class Builder {
@@ -39,64 +49,28 @@ public class LegacyRuleSet {
         private boolean legacyChest = false;
         private boolean legacySounds = false;
         private boolean farmlandTrampleOnWalk = false;
+        private boolean disableSweepAttack = false;
+        private boolean legacyKnockback = false;
+        private boolean disableAttackSounds = false;
+        private boolean legacySkeleton = false;
+        private boolean legacyMobAI = false;
 
-        public Builder disableCriticalHits() {
-            this.disableCriticalHits = true;
-            return this;
-        }
-
-        public Builder disableHunger() {
-            this.disableHunger = true;
-            return this;
-        }
-
-        public Builder instantBowShoot() {
-            this.instantBowShoot = true;
-            return this;
-        }
-
-        public Builder instantFoodConsume() {
-            this.instantFoodConsume = true;
-            return this;
-        }
-
-        public Builder tntIgnitesOnPunch() {
-            this.tntIgnitesOnPunch = true;
-            return this;
-        }
-
-        public Builder disableWeaponCooldown() {
-            this.disableWeaponCooldown = true;
-            return this;
-        }
-
-        public Builder infiniteFireSpread() {
-            this.infiniteFireSpread = true;
-            return this;
-        }
-
-        public Builder fragileBoats() {
-            this.fragileBoats = true;
-            return this;
-        }
-
-        public Builder legacyChest() {
-            this.legacyChest = true;
-            return this;
-        }
-
-        public Builder legacySounds() {
-            this.legacySounds = true;
-            return this;
-        }
-
-        public Builder farmlandTrampleOnWalk() {
-            this.farmlandTrampleOnWalk = true;
-            return this;
-        }
-
-        public LegacyRuleSet build() {
-            return new LegacyRuleSet(this);
-        }
+        public Builder disableCriticalHits() { this.disableCriticalHits = true; return this; }
+        public Builder disableHunger() { this.disableHunger = true; return this; }
+        public Builder instantBowShoot() { this.instantBowShoot = true; return this; }
+        public Builder instantFoodConsume() { this.instantFoodConsume = true; return this; }
+        public Builder tntIgnitesOnPunch() { this.tntIgnitesOnPunch = true; return this; }
+        public Builder disableWeaponCooldown() { this.disableWeaponCooldown = true; return this; }
+        public Builder infiniteFireSpread() { this.infiniteFireSpread = true; return this; }
+        public Builder fragileBoats() { this.fragileBoats = true; return this; }
+        public Builder legacyChest() { this.legacyChest = true; return this; }
+        public Builder legacySounds() { this.legacySounds = true; return this; }
+        public Builder farmlandTrampleOnWalk() { this.farmlandTrampleOnWalk = true; return this; }
+        public Builder disableSweepAttack() { this.disableSweepAttack = true; return this; }
+        public Builder legacyKnockback() { this.legacyKnockback = true; return this; }
+        public Builder disableAttackSounds() { this.disableAttackSounds = true; return this; }
+        public Builder legacySkeleton() { this.legacySkeleton = true; return this; }
+        public Builder legacyMobAI() { this.legacyMobAI = true; return this; }
+        public LegacyRuleSet build() { return new LegacyRuleSet(this); }
     }
 }
