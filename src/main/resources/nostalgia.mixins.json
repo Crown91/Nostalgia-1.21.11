@@ -29,6 +29,8 @@
     "alpha.AlphaEntitySoundMixin",
     "alpha.AlphaJukeboxPlayableMixin",
     "alpha.AlphaServerLevelSnowMixin",
+    "alpha.AlphaSkeletonMixin",
+    "alpha.AlphaDamageIndicatorMixin",
     "server.HologramBlockBreakMixin",
     "server.HologramBlockPlaceMixin",
     "server.GlobalBlockChangeMixin",
