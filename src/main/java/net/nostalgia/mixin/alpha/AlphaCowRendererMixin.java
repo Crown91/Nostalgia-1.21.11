@@ -6,7 +6,7 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.CowRenderer;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.state.CowRenderState;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.nostalgia.world.dimension.ModDimensions;
 import net.nostalgia.client.model.AlphaCowModel;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,10 +31,10 @@ public abstract class AlphaCowRendererMixin extends MobRenderer<net.minecraft.wo
   }
 
   @Inject(
-    method = "submit(Lnet/minecraft/client/renderer/entity/state/CowRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V",
+    method = "submit(Lnet/minecraft/client/renderer/entity/state/CowRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V",
     at = @At(
       value = "INVOKE",
-      target = "Lnet/minecraft/client/renderer/entity/MobRenderer;submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V"
+      target = "Lnet/minecraft/client/renderer/entity/MobRenderer;submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V"
     )
   )
   private void nostalgia$swapModelBeforeRender(CowRenderState state, PoseStack poseStack,
