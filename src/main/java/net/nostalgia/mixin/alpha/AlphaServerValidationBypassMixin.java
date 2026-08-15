@@ -16,7 +16,11 @@ public abstract class AlphaServerValidationBypassMixin {
     private void alwaysTrustClientInAlpha(CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof ServerGamePacketListenerImpl gameListener) {
             ServerPlayer player = gameListener.player;
-            if (player != null && (player.level().dimension() == ModDimensions.ALPHA_112_01_LEVEL_KEY || net.nostalgia.alphalogic.ritual.SkyPortalManager.isAnyActive())) {
+            if (player != null && (
+                net.nostalgia.alphalogic.ritual.DimensionUtil.isClientGenerated(player.level().dimension().identifier().toString()) ||
+                net.nostalgia.alphalogic.ritual.event.RitualEventRegistry.isParticipantAny(player.getUUID()) ||
+                net.nostalgia.alphalogic.ritual.SkyPortalManager.isAnyActive()
+            )) {
                 cir.setReturnValue(true);
             }
         }
