@@ -2,8 +2,11 @@ package net.nostalgia.mixin.physics;
 
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.pathfinder.PathType;
+import net.nostalgia.alphalogic.bridge.AlphaAIEngine;
+import net.nostalgia.world.rules.NostalgiaRules;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,13 +20,16 @@ public abstract class LegacyPhysicsMobAIMixin {
     @Shadow
     public abstract void setPathfindingMalus(PathType type, float malus);
 
+    @Unique
+    private boolean nostalgia$aiInitialized = false;
+
     @Inject(method = "tick", at = @At("HEAD"))
     private void injectAlphaAI(CallbackInfo ci) {
         Mob self = (Mob)(Object)this;
-        if (!(self.level() instanceof net.minecraft.server.level.ServerLevel)) {
+        if (self.level() == null || self.level().isClientSide()) {
             return;
         }
-        if (!self.level().dimension().equals(net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY)) {
+        if (!NostalgiaRules.getForLevel(self.level()).legacyMobAI) {
             return;
         }
 
@@ -33,7 +39,7 @@ public abstract class LegacyPhysicsMobAIMixin {
             return;
         }
 
-        if (!self.getTags().contains("alpha_ai_set")) {
+        if (!this.nostalgia$aiInitialized) {
 
             this.goalSelector.removeAllGoals(goal -> {
                 // Depending on the version the predicate may receive the WrappedGoal
@@ -57,9 +63,9 @@ public abstract class LegacyPhysicsMobAIMixin {
             this.setPathfindingMalus(PathType.DANGER_OTHER, 0.0F);
             this.setPathfindingMalus(PathType.DAMAGE_OTHER, 0.0F);
 
-            self.addTag("alpha_ai_set");
+            this.nostalgia$aiInitialized = true;
         }
 
-        net.nostalgia.alphalogic.bridge.AlphaAIEngine.tickActivity(self);
+        AlphaAIEngine.tickActivity(self);
     }
 }
