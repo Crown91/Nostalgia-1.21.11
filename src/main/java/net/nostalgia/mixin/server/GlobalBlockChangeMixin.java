@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Level.class)
 public class GlobalBlockChangeMixin {
+
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z", at = @At("HEAD"))
     private void onGlobalSetBlock(BlockPos pos, BlockState newState, int flags, int maxUpdateDepth, CallbackInfoReturnable<Boolean> cir) {
         Level level = (Level) (Object) this;
@@ -22,11 +23,16 @@ public class GlobalBlockChangeMixin {
                 BlockState oldState = chunk.getBlockState(pos);
                 if (oldState == newState) return;
 
+                if (net.nostalgia.alphalogic.ritual.DeltaRecordingContext.IS_CHUNK_TICK.get()) return;
+
                 String dimId = sl.dimension().identifier().toString();
 
                 if (net.nostalgia.alphalogic.ritual.DimensionUtil.isClientGenerated(dimId)) {
-                    net.nostalgia.alphalogic.ritual.HologramWorldData.get(sl).addDelta(pos.immutable(), newState);
-                } else {
+                    if (!newState.getFluidState().isEmpty()) return;
+                }
+
+                net.nostalgia.alphalogic.ritual.HologramWorldData.get(sl).addDelta(pos.immutable(), newState);
+                if (!net.nostalgia.alphalogic.ritual.DimensionUtil.isClientGenerated(dimId)) {
                     net.nostalgia.alphalogic.ritual.ServerChunkTracker.get(sl).markDirty(pos.immutable());
                 }
 
