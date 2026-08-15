@@ -36,6 +36,7 @@ public class AlphaSounds {
         public static final Holder<SoundEvent> RANDOM_SPLASH = register("random.splash");
         public static final Holder<SoundEvent> RANDOM_CLICK = register("random.click");
         public static final Holder<SoundEvent> RANDOM_POP = register("random.pop");
+        public static final Holder<SoundEvent> RANDOM_DRR = register("random.drr");
 
         public static final Holder<SoundEvent> STEP_GRASS = register("step.grass");
         public static final Holder<SoundEvent> STEP_GRAVEL = register("step.gravel");
