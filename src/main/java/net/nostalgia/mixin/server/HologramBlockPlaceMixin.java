@@ -34,7 +34,11 @@ public class HologramBlockPlaceMixin {
         if (match != null) {
             if (!(stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem)) return;
 
-            net.minecraft.world.level.block.state.BlockState stateToPlace = blockItem.getBlock().defaultBlockState();
+            net.minecraft.world.item.context.BlockPlaceContext placeContext = new net.minecraft.world.item.context.BlockPlaceContext(player, hand, stack, hitResult);
+            net.minecraft.world.level.block.state.BlockState stateToPlace = blockItem.getBlock().getStateForPlacement(placeContext);
+            if (stateToPlace == null) {
+                stateToPlace = blockItem.getBlock().defaultBlockState();
+            }
             
             if (!player.getAbilities().instabuild) {
                 stack.shrink(1);
@@ -42,6 +46,8 @@ public class HologramBlockPlaceMixin {
 
             match.targetLevel.getChunk(match.targetPos.getX() >> 4, match.targetPos.getZ() >> 4, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true);
             match.targetLevel.setBlock(match.targetPos, stateToPlace, 3);
+
+
 
             cir.setReturnValue(InteractionResult.SUCCESS);
             return;
