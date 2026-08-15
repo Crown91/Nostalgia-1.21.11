@@ -17,7 +17,9 @@ public class BlockCollisionsNostalgiaMixin {
     @Inject(method = "computeNext", at = @At("HEAD"))
     private void onComputeNextHead(CallbackInfoReturnable<Object> cir) {
         if (this.collisionGetter instanceof net.minecraft.world.level.Level level) {
-            NostalgiaServerCollisionBypassProvider.IS_OVERWORLD.set(level.dimension() == net.minecraft.world.level.Level.OVERWORLD);
+            net.nostalgia.alphalogic.ritual.event.EchoRitualEvent t = net.nostalgia.alphalogic.ritual.event.RitualEventRegistry.activeTransition();
+            boolean isRitualDim = (t != null && level.dimension() == t.dimension());
+            net.nostalgia.alphalogic.ritual.NostalgiaServerCollisionBypassProvider.IS_OVERWORLD.set(isRitualDim);
         }
     }
 
