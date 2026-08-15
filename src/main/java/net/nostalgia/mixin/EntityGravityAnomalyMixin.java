@@ -20,17 +20,14 @@ public abstract class EntityGravityAnomalyMixin {
     private void applyIslandGravity(CallbackInfo ci) {
         Entity entity = (Entity) (Object) this;
         if (entity.level().isClientSide()) return;
+        if (net.nostalgia.alphalogic.ritual.event.RitualEventRegistry.isParticipant(entity)) return;
 
-        SkyPortalEventInstance portal = SkyPortalManager.getActive();
+        String currentDim = entity.level().dimension().identifier().toString();
+        SkyPortalEventInstance portal = SkyPortalManager.findNearest(entity.blockPosition(), currentDim);
         if (portal == null) {
             if (this.portalControlledGravity) {
                 this.portalControlledGravity = false;
             }
-            return;
-        }
-
-        String currentDim = entity.level().dimension().identifier().toString();
-        if (!currentDim.equals(portal.sourceDimension()) && !currentDim.equals(portal.targetDimension())) {
             return;
         }
 
@@ -67,8 +64,10 @@ public abstract class EntityGravityAnomalyMixin {
             return;
         }
 
-        double transitionStart = portal.crackPlaneY() + 10.0;
-        double transitionEnd = portal.crackPlaneY() + 15.0;
+        boolean isTarget = currentDim.equals(portal.targetDimension());
+        int activeCrackY = isTarget ? portal.crackPlaneYTarget() : portal.crackPlaneY();
+        double transitionStart = activeCrackY;
+        double transitionEnd = activeCrackY + 5.0;
         double entityY = entity.getY();
 
         if (gc.getGravityDirection() == Gravity.DOWN) {
