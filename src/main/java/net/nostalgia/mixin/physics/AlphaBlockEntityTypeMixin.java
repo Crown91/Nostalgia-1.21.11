@@ -17,6 +17,8 @@ public class AlphaBlockEntityTypeMixin {
             cir.setReturnValue(true);
         } else if ((Object) this == BlockEntityType.FURNACE && state.is(AlphaBlocks.ALPHA_FURNACE)) {
             cir.setReturnValue(true);
+        } else if ((Object) this == BlockEntityType.JUKEBOX && state.is(AlphaBlocks.ALPHA_JUKEBOX)) {
+            cir.setReturnValue(true);
         }
     }
 }
