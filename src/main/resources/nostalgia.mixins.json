@@ -15,7 +15,6 @@
     "rd132211.EntityMixin",
     "alpha.AlphaServerValidationBypassMixin",
     "alpha.AlphaEnvironmentProbeMixin",
-    "alpha.AlphaRenderSetupMixin",
     "alpha.AlphaLevelTickMixin",
     "alpha.AlphaNaturalSpawnerBypassMixin",
     "alpha.AlphaWaterSoundsMixin",
@@ -79,6 +78,7 @@
   "client": [
     "WorldOpenFlowsMixin",
     "alpha.AlphaKeyboardMixin",
+    "alpha.AlphaRenderSetupMixin",
     "alpha.AlphaFogMixin",
     "alpha.AlphaPlayerBridgeMixin",
     "alpha.AlphaLivingEntityTextureMixin",
