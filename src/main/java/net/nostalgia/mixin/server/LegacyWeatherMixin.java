@@ -12,28 +12,36 @@ public class LegacyWeatherMixin {
 
     @Inject(method = "isRaining", at = @At("HEAD"), cancellable = true)
     private void enforceNoRainInLegacy(CallbackInfoReturnable<Boolean> cir) {
-        if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
+        if (net.nostalgia.world.rules.LegacyProfiles.get((Level) (Object) this).isEternalSnow()) {
+            cir.setReturnValue(true);
+        } else if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "isThundering", at = @At("HEAD"), cancellable = true)
     private void enforceNoThunderInLegacy(CallbackInfoReturnable<Boolean> cir) {
-        if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
+        if (net.nostalgia.world.rules.LegacyProfiles.get((Level) (Object) this).isEternalSnow()) {
+            cir.setReturnValue(false);
+        } else if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "getRainLevel", at = @At("HEAD"), cancellable = true)
     private void enforceNoVisualRainInLegacy(float delta, CallbackInfoReturnable<Float> cir) {
-        if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
+        if (net.nostalgia.world.rules.LegacyProfiles.get((Level) (Object) this).isEternalSnow()) {
+            cir.setReturnValue(0.0f);
+        } else if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
             cir.setReturnValue(0.0f);
         }
     }
 
     @Inject(method = "getThunderLevel", at = @At("HEAD"), cancellable = true)
     private void enforceNoVisualThunderInLegacy(float delta, CallbackInfoReturnable<Float> cir) {
-        if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
+        if (net.nostalgia.world.rules.LegacyProfiles.get((Level) (Object) this).isEternalSnow()) {
+            cir.setReturnValue(0.0f);
+        } else if (!LegacyDimensionRules.hasWeather((Level) (Object) this)) {
             cir.setReturnValue(0.0f);
         }
     }
