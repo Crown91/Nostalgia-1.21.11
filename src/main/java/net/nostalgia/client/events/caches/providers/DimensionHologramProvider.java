@@ -7,4 +7,8 @@ public interface DimensionHologramProvider {
     void generateChunkData(int chunkX, int chunkZ, byte[] target, long seed);
     void decorateChunk(ChunkPos cp, long seed);
     BlockState getBlockState(byte id, boolean inverted);
+
+    default boolean selfGenerated() {
+        return false;
+    }
 }
