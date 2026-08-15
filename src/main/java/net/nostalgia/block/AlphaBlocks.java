@@ -509,6 +509,18 @@ public class AlphaBlocks {
                         new net.minecraft.world.level.block.FurnaceBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE).setId(ALPHA_FURNACE_KEY)) {},
                         ALPHA_FURNACE_KEY);
 
+        public static final net.minecraft.resources.ResourceKey<Block> ALPHA_JUKEBOX_KEY = net.minecraft.resources.ResourceKey
+                        .create(net.minecraft.core.registries.Registries.BLOCK, Identifier.fromNamespaceAndPath("nostalgia", "alpha_jukebox"));
+        public static final Block ALPHA_JUKEBOX = registerBlock("alpha_jukebox",
+                        new net.minecraft.world.level.block.JukeboxBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.JUKEBOX).setId(ALPHA_JUKEBOX_KEY)),
+                        ALPHA_JUKEBOX_KEY);
+
+        public static final net.minecraft.resources.ResourceKey<Block> ALPHA_SNOW_KEY = net.minecraft.resources.ResourceKey
+                        .create(net.minecraft.core.registries.Registries.BLOCK, Identifier.fromNamespaceAndPath("nostalgia", "alpha_snow"));
+        public static final Block ALPHA_SNOW = registerBlock("alpha_snow",
+                        new net.minecraft.world.level.block.SnowLayerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.SNOW).setId(ALPHA_SNOW_KEY)),
+                        ALPHA_SNOW_KEY);
+
         public static final CreativeModeTab ALPHA_TAB = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
                         ALPHA_TAB_KEY,
                         net.minecraft.world.item.CreativeModeTab.builder(net.minecraft.world.item.CreativeModeTab.Row.TOP, 0)
