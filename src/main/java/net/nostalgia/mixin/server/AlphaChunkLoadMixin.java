@@ -17,7 +17,7 @@ public class AlphaChunkLoadMixin {
         if (!loaded) return;
         LevelChunk chunk = (LevelChunk) (Object) this;
         if (!(chunk.getLevel() instanceof ServerLevel sl)) return;
-        if (sl.dimension() != net.nostalgia.world.dimension.ModDimensions.ALPHA_112_01_LEVEL_KEY) return;
+        if (!net.nostalgia.alphalogic.ritual.DimensionUtil.isClientGenerated(sl.dimension().identifier().toString())) return;
 
         net.nostalgia.alphalogic.ritual.HologramWorldData data = net.nostalgia.alphalogic.ritual.HologramWorldData.get(sl);
         int chunkMinX = chunk.getPos().getMinBlockX();
