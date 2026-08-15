@@ -52,7 +52,10 @@ public abstract class AlphaBowMixin extends ProjectileWeaponItem {
                 ItemStack ammo = drawnAmmo.get(0);
                 if (!ammo.isEmpty()) {
                     
-                    net.minecraft.world.entity.projectile.Projectile arrow = this.createProjectile(level, player, bowStack, ammo, true);
+                    net.minecraft.world.entity.projectile.Projectile arrow = this.createProjectile(level, player, bowStack, ammo, false);
+                    if (arrow instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow abstractArrow) {
+                        abstractArrow.setSoundEvent(net.nostalgia.world.gen.AlphaSounds.RANDOM_DRR.value());
+                    }
                     this.shootProjectile(player, arrow, 0, power, 1.0F, 0.0F, null);
                     serverLevel.addFreshEntity(arrow);
                 }
@@ -63,10 +66,10 @@ public abstract class AlphaBowMixin extends ProjectileWeaponItem {
                 player.getX(),
                 player.getY(),
                 player.getZ(),
-                net.nostalgia.sound.AlphaSounds.RANDOM_BOW,
+                net.nostalgia.world.gen.AlphaSounds.RANDOM_BOW.value(),
                 SoundSource.PLAYERS,
                 1.0F,
-                1.0F / (level.getRandom().nextFloat() * 0.4F + 1.2F) + 0.5F
+                1.0F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
             );
             player.awardStat(net.minecraft.stats.Stats.ITEM_USED.get(this));
 
