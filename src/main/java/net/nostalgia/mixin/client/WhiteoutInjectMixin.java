@@ -22,9 +22,6 @@ public class WhiteoutInjectMixin {
         if (net.nostalgia.client.events.core.ClientRitualEventRegistry.activeTransition() != null) {
             net.nostalgia.client.render.WhiteoutSphereRenderer.render(deltaTracker);
         }
-        if (net.nostalgia.client.events.core.ClientRitualEventRegistry.activeSkyPortal() != null) {
-            net.nostalgia.client.render.PortalSkyRenderer.render(deltaTracker);
-        }
         if (net.nostalgia.client.render.GlassBreakRenderer.active) {
             net.nostalgia.client.render.GlassBreakRenderer.render(deltaTracker);
         }
