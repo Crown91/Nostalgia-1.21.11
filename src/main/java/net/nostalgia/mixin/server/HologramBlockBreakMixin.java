@@ -49,19 +49,18 @@ public class HologramBlockBreakMixin {
         if (oldState.isAir()) oldState = Blocks.DIRT.defaultBlockState();
 
         if (shouldDrop) {
-            net.minecraft.world.level.block.Block.dropResources(oldState, match.targetLevel, match.targetPos, null, player, player.getMainHandItem());
+            net.minecraft.world.level.block.Block.dropResources(oldState, level, pos, null, player, player.getMainHandItem());
         }
 
         match.targetLevel.getChunk(match.targetPos.getX() >> 4, match.targetPos.getZ() >> 4, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true);
         match.targetLevel.setBlock(match.targetPos, Blocks.AIR.defaultBlockState(), 3);
+
+
 
         ci.cancel();
     }
 
     @Inject(method = "destroyBlock", at = @At("RETURN"))
     private void onPhysicalAlphaBreak(BlockPos pos, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValueZ() && net.nostalgia.alphalogic.ritual.DimensionUtil.isClientGenerated(level.dimension().identifier().toString())) {
-            net.nostalgia.alphalogic.ritual.HologramWorldData.get(level).addDelta(pos, Blocks.AIR.defaultBlockState());
-        }
     }
 }
