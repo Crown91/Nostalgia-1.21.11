@@ -5,7 +5,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.Level;
@@ -25,8 +24,8 @@ public class ZoneSavedData extends SavedData {
   }
 
   public static SavedDataType<ZoneSavedData> type() {
-    return new SavedDataType(
-      Identifier.fromNamespaceAndPath("nostalgia", "nostalgia_timestop_zone"),
+    return new SavedDataType<>(
+      DATA_NAME,
       () -> new ZoneSavedData(new ArrayList<>()),
       CODEC,
       DataFixTypes.SAVED_DATA_COMMAND_STORAGE
@@ -34,7 +33,7 @@ public class ZoneSavedData extends SavedData {
   }
 
   public static ZoneSavedData get(ServerLevel overworld) {
-    return (ZoneSavedData)overworld.getServer().getLevel(Level.OVERWORLD).getDataStorage().computeIfAbsent(type());
+    return overworld.getServer().getLevel(Level.OVERWORLD).getDataStorage().computeIfAbsent(type());
   }
 
   public void updateZones(List<ZoneSavedData.ZoneEntry> newZones) {
