@@ -23,13 +23,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LivingEntity.class)
 public abstract class AlphaMobLootMixin {
 
+    @org.spongepowered.asm.mixin.Shadow
+    protected abstract void dropFromShearingLootTable(ServerLevel level, net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable> key, ItemStack tool, java.util.function.BiConsumer<ServerLevel, ItemStack> consumer);
+
     @Inject(method = "hurtServer", at = @At("HEAD"))
     private void injectAlphaHurt(ServerLevel level, DamageSource source, float amount, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (level.dimension() == ModDimensions.ALPHA_112_01_LEVEL_KEY) {
             if (entity instanceof Sheep sheep && source.getEntity() instanceof net.minecraft.world.entity.player.Player) {
                 if (sheep.readyForShearing()) {
-                    sheep.shear(level, net.minecraft.sounds.SoundSource.PLAYERS, ItemStack.EMPTY);
+                    dropFromShearingLootTable(
+                        level,
+                        net.minecraft.world.level.storage.loot.BuiltInLootTables.SHEAR_SHEEP,
+                        ItemStack.EMPTY,
+                        (l, drop) -> {
+                            for (int i = 0; i < drop.getCount(); i++) {
+                                net.minecraft.world.entity.item.ItemEntity itemEntity = sheep.spawnAtLocation(l, drop.copyWithCount(1), 1.0F);
+                                if (itemEntity != null) {
+                                    itemEntity.setDeltaMovement(
+                                        itemEntity.getDeltaMovement().add(
+                                            (sheep.getRandom().nextFloat() - sheep.getRandom().nextFloat()) * 0.1F,
+                                            sheep.getRandom().nextFloat() * 0.05F,
+                                            (sheep.getRandom().nextFloat() - sheep.getRandom().nextFloat()) * 0.1F
+                                        )
+                                    );
+                                }
+                            }
+                        }
+                    );
+                    sheep.setSheared(true);
                 }
             }
         }
