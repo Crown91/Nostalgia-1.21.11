@@ -9,14 +9,14 @@ import net.nostalgia.client.events.skyportal.MonolithicSkyPortalEvent;
 
 @Environment(EnvType.CLIENT)
 public final class ClientRitualEventRegistry {
+  private ClientRitualEventRegistry() {
+  }
 
-    private ClientRitualEventRegistry() {}
+  public static ClientEchoRitualView activeTransition() {
+    return MonolithicClientEchoRitualView.activeOrNull();
+  }
 
-    public static ClientEchoRitualView activeTransition() {
-        return MonolithicClientEchoRitualView.activeOrNull();
-    }
-
-    public static SkyPortalEvent activeSkyPortal() {
-        return MonolithicSkyPortalEvent.activeOrNull();
-    }
+  public static SkyPortalEvent activeSkyPortal() {
+    return MonolithicSkyPortalEvent.activeOrNull();
+  }
 }
