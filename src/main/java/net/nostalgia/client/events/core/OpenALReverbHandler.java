@@ -5,88 +5,94 @@ import org.lwjgl.openal.ALC10;
 import org.lwjgl.openal.EXTEfx;
 
 public class OpenALReverbHandler {
+  private static boolean initialized = false;
+  private static int auxFXSlot = 0;
+  private static int reverbEffect = 0;
+  private static int sendFilter = 0;
 
-    private static boolean initialized = false;
-    private static int auxFXSlot = 0;
-    private static int reverbEffect = 0;
-    private static int sendFilter = 0;
+  public OpenALReverbHandler() {
+  }
 
-    public static void initialize() {
-        if (initialized) {
-            try {
-                if (EXTEfx.alIsEffect(reverbEffect)) return;
-            } catch (Exception e) {}
-            initialized = false;
+  public static void initialize() {
+    if (initialized) {
+      try {
+        if (EXTEfx.alIsEffect(reverbEffect)) {
+          return;
         }
-        try {
-            long currentContext = ALC10.alcGetCurrentContext();
-            long device = ALC10.alcGetContextsDevice(currentContext);
+      } catch (Exception var5) {
+      }
 
-            if (!ALC10.alcIsExtensionPresent(device, "ALC_EXT_EFX")) {
-                System.out.println("[Nostalgia] EFX Extension not available - reverb disabled");
-                return;
-            }
-
-            auxFXSlot = EXTEfx.alGenAuxiliaryEffectSlots();
-            EXTEfx.alAuxiliaryEffectSloti(auxFXSlot, EXTEfx.AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, AL11.AL_TRUE);
-
-            reverbEffect = EXTEfx.alGenEffects();
-            EXTEfx.alEffecti(reverbEffect, EXTEfx.AL_EFFECT_TYPE, EXTEfx.AL_EFFECT_EAXREVERB);
-
-            sendFilter = EXTEfx.alGenFilters();
-            EXTEfx.alFilteri(sendFilter, EXTEfx.AL_FILTER_TYPE, EXTEfx.AL_FILTER_LOWPASS);
-
-            
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_DENSITY, 1.0f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_DIFFUSION, 1.0f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_GAIN, 0.5f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_GAINHF, 0.1f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_DECAY_TIME, 5.0f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_DECAY_HFRATIO, 0.1f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_REFLECTIONS_GAIN, 0.5f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_REFLECTIONS_DELAY, 0.05f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_LATE_REVERB_GAIN, 1.5f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_LATE_REVERB_DELAY, 0.05f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_AIR_ABSORPTION_GAINHF, 0.99f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_ROOM_ROLLOFF_FACTOR, 0.1f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_ECHO_TIME, 0.25f);
-            EXTEfx.alEffectf(reverbEffect, EXTEfx.AL_EAXREVERB_ECHO_DEPTH, 0.3f);
-
-            EXTEfx.alAuxiliaryEffectSloti(auxFXSlot, EXTEfx.AL_EFFECTSLOT_EFFECT, reverbEffect);
-
-            initialized = true;
-            System.out.println("[Nostalgia] EFX Reverb system initialized successfully");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+      initialized = false;
     }
 
-    public static void applyReverb(int sourceId) {
-        if (!initialized) return;
-        try {
-            if (!EXTEfx.alIsEffect(reverbEffect)) {
-                initialized = false;
-                initialize();
-                if (!initialized) return;
-            }
-            EXTEfx.alFilterf(sendFilter, EXTEfx.AL_LOWPASS_GAIN, 1.0f);
-            EXTEfx.alFilterf(sendFilter, EXTEfx.AL_LOWPASS_GAINHF, 0.5f);
-            AL11.alSource3i(sourceId, EXTEfx.AL_AUXILIARY_SEND_FILTER, auxFXSlot, 0, sendFilter);
-        } catch (Exception e) {
-            initialized = false;
-        }
-    }
+    try {
+      long currentContext = ALC10.alcGetCurrentContext();
+      long device = ALC10.alcGetContextsDevice(currentContext);
+      if (!ALC10.alcIsExtensionPresent(device, "ALC_EXT_EFX")) {
+        System.out.println("[Nostalgia] EFX Extension not available - reverb disabled");
+        return;
+      }
 
-    public static void removeReverb(int sourceId) {
-        if (!initialized) return;
-        try {
-            if (!EXTEfx.alIsEffect(reverbEffect)) {
-                initialized = false;
-                return;
-            }
-            AL11.alSource3i(sourceId, EXTEfx.AL_AUXILIARY_SEND_FILTER, EXTEfx.AL_EFFECTSLOT_NULL, 0, EXTEfx.AL_FILTER_NULL);
-        } catch (Exception e) {
-            initialized = false;
-        }
+      auxFXSlot = EXTEfx.alGenAuxiliaryEffectSlots();
+      EXTEfx.alAuxiliaryEffectSloti(auxFXSlot, 3, 1);
+      reverbEffect = EXTEfx.alGenEffects();
+      EXTEfx.alEffecti(reverbEffect, 32769, 32768);
+      sendFilter = EXTEfx.alGenFilters();
+      EXTEfx.alFilteri(sendFilter, 32769, 1);
+      EXTEfx.alEffectf(reverbEffect, 1, 1.0F);
+      EXTEfx.alEffectf(reverbEffect, 2, 1.0F);
+      EXTEfx.alEffectf(reverbEffect, 3, 0.5F);
+      EXTEfx.alEffectf(reverbEffect, 4, 0.1F);
+      EXTEfx.alEffectf(reverbEffect, 6, 5.0F);
+      EXTEfx.alEffectf(reverbEffect, 7, 0.1F);
+      EXTEfx.alEffectf(reverbEffect, 9, 0.5F);
+      EXTEfx.alEffectf(reverbEffect, 10, 0.05F);
+      EXTEfx.alEffectf(reverbEffect, 12, 1.5F);
+      EXTEfx.alEffectf(reverbEffect, 13, 0.05F);
+      EXTEfx.alEffectf(reverbEffect, 19, 0.99F);
+      EXTEfx.alEffectf(reverbEffect, 22, 0.1F);
+      EXTEfx.alEffectf(reverbEffect, 15, 0.25F);
+      EXTEfx.alEffectf(reverbEffect, 16, 0.3F);
+      EXTEfx.alAuxiliaryEffectSloti(auxFXSlot, 1, reverbEffect);
+      initialized = true;
+      System.out.println("[Nostalgia] EFX Reverb system initialized successfully");
+    } catch (Exception var4) {
+      var4.printStackTrace();
     }
+  }
+
+  public static void applyReverb(int sourceId) {
+    if (initialized) {
+      try {
+        if (!EXTEfx.alIsEffect(reverbEffect)) {
+          initialized = false;
+          initialize();
+          if (!initialized) {
+            return;
+          }
+        }
+
+        EXTEfx.alFilterf(sendFilter, 1, 1.0F);
+        EXTEfx.alFilterf(sendFilter, 2, 0.5F);
+        AL11.alSource3i(sourceId, 131078, auxFXSlot, 0, sendFilter);
+      } catch (Exception var2) {
+        initialized = false;
+      }
+    }
+  }
+
+  public static void removeReverb(int sourceId) {
+    if (initialized) {
+      try {
+        if (!EXTEfx.alIsEffect(reverbEffect)) {
+          initialized = false;
+          return;
+        }
+
+        AL11.alSource3i(sourceId, 131078, 0, 0, 0);
+      } catch (Exception var2) {
+        initialized = false;
+      }
+    }
+  }
 }
