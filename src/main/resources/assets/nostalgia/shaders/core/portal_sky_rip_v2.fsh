@@ -139,8 +139,6 @@ void main() {
         return;
     }
 
-    
-    
     float currentWaveTime = max(0.0, TransitionTime - shatterTime);
     float waveRadius = (currentWaveTime / waveExpansionTime) * maxShatterRadius;
     if (currentWaveTime <= 0.001) waveRadius = -1000.0;
@@ -173,8 +171,6 @@ void main() {
         float alpha2 = pow(layerRiftData2.r, 3.0);
         float localAlpha = max(alpha1, alpha2);
 
-        
-        
         float radialNorm = clamp(layerRawDist / CRACK_SPREAD_RADIUS, 0.0, 1.0);
         float crackActivation = smoothstep(radialNorm, radialNorm + 0.08, bAmp);
         localAlpha *= crackActivation;
@@ -205,7 +201,6 @@ void main() {
         if (totalCrackAlpha > 0.99) break;
     }
 
-    
     for (int flyI = 0; flyI < 10; flyI++) {
         float flyHeight = float(flyI + 1) * 8.0;
         float flyPlaneY = crackPlaneY + flyHeight;
