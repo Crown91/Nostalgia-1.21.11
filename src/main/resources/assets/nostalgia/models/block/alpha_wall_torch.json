@@ -2,5 +2,6 @@
   "parent": "minecraft:block/template_torch_wall",
   "textures": {
     "torch": "nostalgia:block/alpha_torch"
-  }
+  },
+  "render_type": "minecraft:cutout"
 }
