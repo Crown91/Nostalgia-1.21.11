@@ -46,4 +46,27 @@ public abstract class LevelRendererDepthMaskMixin {
             });
         }
     }
+
+    @Inject(method = "addMainPass", at = @At("RETURN"))
+    private void nost$addSkyPortalPass(
+            FrameGraphBuilder frame,
+            net.minecraft.client.renderer.culling.Frustum frustum,
+            org.joml.Matrix4f modelViewMatrix,
+            com.mojang.blaze3d.buffers.GpuBufferSlice terrainFog,
+            boolean renderOutline,
+            net.minecraft.client.renderer.state.LevelRenderState levelRenderState,
+            DeltaTracker deltaTracker,
+            net.minecraft.util.profiling.ProfilerFiller profiler,
+            CallbackInfo ci
+    ) {
+        if (net.nostalgia.client.events.core.ClientRitualEventRegistry.activeSkyPortal() != null || net.nostalgia.client.render.PortalSkyRenderer.active) {
+            FramePass pass = frame.addPass("nostalgia_sky_portal");
+            com.mojang.blaze3d.resource.ResourceHandle<RenderTarget> handle = pass.readsAndWrites(this.targets.main);
+            this.targets.main = handle;
+            pass.executes(() -> {
+                RenderTarget target = handle.get();
+                net.nostalgia.client.render.PortalSkyRenderer.render(target, deltaTracker);
+            });
+        }
+    }
 }
