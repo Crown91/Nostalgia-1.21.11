@@ -16,6 +16,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.nostalgia.mixin.client.frozen.SpriteContentsAccessor;
 
 public class BlockSpriteProvider {
   private static BlockSpriteProvider instance;
@@ -138,7 +139,7 @@ public class BlockSpriteProvider {
 
   private int[] readSpritePixels(TextureAtlasSprite sprite) {
     SpriteContents contents = sprite.contents();
-    NativeImage image = contents.originalImage;
+    NativeImage image = ((SpriteContentsAccessor)(Object)contents).nostalgia$getOriginalImage();
     int srcW = contents.width();
     int srcH = contents.height();
     int[] pixels = new int[256];

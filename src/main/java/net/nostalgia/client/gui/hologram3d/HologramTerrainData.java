@@ -47,7 +47,7 @@ public class HologramTerrainData {
       Map<Long, byte[]> fastLookup = new HashMap<>();
 
       for (Entry<ChunkPos, byte[]> entry : diskData.entrySet()) {
-        fastLookup.put(entry.getKey().pack(), entry.getValue());
+        fastLookup.put(entry.getKey().toLong(), entry.getValue());
       }
 
       for (int dx = 0; dx < this.diameter; dx++) {
@@ -57,7 +57,7 @@ public class HologramTerrainData {
           int idx = dx * this.diameter + dz;
           int chunkX = worldX >> 4;
           int chunkZ = worldZ >> 4;
-          byte[] chunkData = fastLookup.get(new ChunkPos(chunkX, chunkZ).pack());
+          byte[] chunkData = fastLookup.get(new ChunkPos(chunkX, chunkZ).toLong());
           if (chunkData == null) {
             this.heightmap[idx] = 64;
             this.colormap[idx] = 0;
