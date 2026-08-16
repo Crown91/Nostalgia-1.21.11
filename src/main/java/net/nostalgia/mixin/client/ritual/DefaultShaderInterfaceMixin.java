@@ -17,14 +17,19 @@ public class DefaultShaderInterfaceMixin {
     private GlUniformFloat3v uRitualCenter;
     private GlUniformFloat uRitualRadius;
     private GlUniformFloat uFogEnd;
+    private GlUniformFloat uHologramMinY;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(ShaderBindingContext context, ChunkShaderOptions options, CallbackInfo ci) {
         this.uRitualCenter = context.bindUniformOptional("u_RitualCenter", GlUniformFloat3v::new);
         this.uRitualRadius = context.bindUniformOptional("u_RitualRadius", GlUniformFloat::new);
         this.uFogEnd = context.bindUniformOptional("u_FogEnd", GlUniformFloat::new);
+        this.uHologramMinY = context.bindUniformOptional("u_HologramMinY", GlUniformFloat::new);
     }
 
+    // PORT NOTE: Sodium 0.8.12 (1.21.11) setupState takes only
+    // (TerrainRenderPass, FogParameters, GpuSampler); 26.1 adds
+    // GpuBufferSlice + GlTexelBuffer parameters.
     @Inject(method = "setupState", at = @At("RETURN"))
     private void onSetupState(TerrainRenderPass pass, FogParameters parameters, com.mojang.blaze3d.textures.GpuSampler terrainSampler, CallbackInfo ci) {
         if (this.uRitualRadius == null || this.uRitualCenter == null) return;
@@ -51,13 +56,31 @@ public class DefaultShaderInterfaceMixin {
             }
         }
 
+        net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
+        net.minecraft.world.phys.Vec3 camPos = camera.position();
+
         if (c != null && r > 0.0f) {
-            net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
-            net.minecraft.world.phys.Vec3 camPos = camera.position();
             this.uRitualCenter.set((float)(c.getX() - camPos.x), (float)(c.getY() - camPos.y), (float)(c.getZ() - camPos.z));
             this.uRitualRadius.setFloat(r);
+
+            if (this.uHologramMinY != null) {
+                net.nostalgia.alphalogic.ritual.event.SkyPortalEvent portal = net.nostalgia.client.events.core.ClientRitualEventRegistry.activeSkyPortal();
+                if (portal != null && portal.islandVisible()) {
+                    boolean isTarget = net.minecraft.client.Minecraft.getInstance().level != null &&
+                        net.minecraft.client.Minecraft.getInstance().level.dimension().identifier().toString().equals(
+                            net.nostalgia.client.render.PortalSkyRenderer.originalTargetDimension);
+                    int crackY = isTarget ? net.nostalgia.client.render.PortalSkyRenderer.crackPlaneYTarget
+                                          : net.nostalgia.client.render.PortalSkyRenderer.crackPlaneY;
+                    this.uHologramMinY.setFloat((float)(crackY - camPos.y));
+                } else {
+                    this.uHologramMinY.setFloat(-99999.0f);
+                }
+            }
         } else {
             this.uRitualRadius.setFloat(0.0f);
+            if (this.uHologramMinY != null) {
+                this.uHologramMinY.setFloat(0.0f);
+            }
         }
     }
 }
