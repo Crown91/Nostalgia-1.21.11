@@ -3,31 +3,29 @@ package net.nostalgia.client.events.core;
 import net.minecraft.core.BlockPos;
 
 public interface IHologramContext {
+  boolean isActive();
 
-    boolean isActive();
+  boolean contains(int var1, int var2, int var3);
 
-    boolean contains(int x, int y, int z);
+  BlockPos getCenter();
 
-    BlockPos getCenter();
+  float getRadius();
 
-    float getRadius();
+  int getOffsetX();
 
-    int getOffsetX();
+  int getOffsetY();
 
-    int getOffsetY();
+  int getOffsetZ();
 
-    int getOffsetZ();
+  String getTargetDimension();
 
-    String getTargetDimension();
+  boolean isSkyInverted();
 
-    boolean isSkyInverted();
+  default boolean isTerrainActive() {
+    return true;
+  }
 
-    default boolean isTerrainActive() {
-        return true;
-    }
-
-    default float getCollisionRadius() {
-        return getRadius();
-    }
+  default float getCollisionRadius() {
+    return this.getRadius();
+  }
 }
-
