@@ -10,22 +10,31 @@ import net.nostalgia.alphalogic.ritual.event.RitualEventRegistry;
 import net.nostalgia.alphalogic.ritual.event.TimestopZoneEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(WeatherEffectRenderer.class)
 public abstract class WeatherEffectRendererMixin {
+
+    @Inject(method = "getPrecipitationAt", at = @At("HEAD"), cancellable = true)
+    private void nostalgia$overridePrecipitation(Level level, BlockPos pos, CallbackInfoReturnable<Biome.Precipitation> cir) {
+        if (net.nostalgia.world.rules.LegacyProfiles.get(level).isEternalSnow()) {
+            cir.setReturnValue(Biome.Precipitation.SNOW);
+        }
+    }
 
     @WrapOperation(
         method = { "extractRenderState", "tickRainParticles" },
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getRainLevel(F)F")
     )
     private float nostalgia$wrapRainLevel(Level level, float partialTicks, Operation<Float> original) {
+        if (net.nostalgia.world.rules.LegacyProfiles.get(level).isEternalSnow()) {
+            return 1.0F;
+        }
         float globalRain = original.call(level, partialTicks);
-        
-        
         if (RitualEventRegistry.hasAnyRainingZone(level.dimension())) {
             return Math.max(globalRain, 1.0F);
         }
-        
         return globalRain;
     }
 
@@ -35,17 +44,17 @@ public abstract class WeatherEffectRendererMixin {
     )
     private Biome.Precipitation nostalgia$wrapPrecipitationRender(WeatherEffectRenderer instance, Level level, BlockPos pos, Operation<Biome.Precipitation> original) {
         Biome.Precipitation biomePrecip = original.call(instance, level, pos);
-        
+        if (net.nostalgia.world.rules.LegacyProfiles.get(level).isEternalSnow()) {
+            return biomePrecip;
+        }
         float localRain = RitualEventRegistry.getLocalRainLevel(level.dimension(), pos);
         if (localRain >= 0.0F) {
-            
             if (localRain == 0.0F) {
                 return Biome.Precipitation.NONE; 
             } else {
                 return biomePrecip; 
             }
         } else {
-            
             float globalRain = level.getRainLevel(1.0F);
             if (level instanceof net.nostalgia.mixin.client.ritual.LevelRainFieldAccessor acc) {
                 globalRain = acc.nostalgia$getRainLevelField();
@@ -64,13 +73,13 @@ public abstract class WeatherEffectRendererMixin {
     )
     private Biome.Precipitation nostalgia$wrapPrecipitationTick(WeatherEffectRenderer instance, Level level, BlockPos pos, Operation<Biome.Precipitation> original) {
         Biome.Precipitation biomePrecip = original.call(instance, level, pos);
-        
+        if (net.nostalgia.world.rules.LegacyProfiles.get(level).isEternalSnow()) {
+            return biomePrecip;
+        }
         float localRain = RitualEventRegistry.getLocalRainLevel(level.dimension(), pos);
         if (localRain >= 0.0F) {
-            
             return Biome.Precipitation.NONE;
         } else {
-            
             float globalRain = level.getRainLevel(1.0F);
             if (level instanceof net.nostalgia.mixin.client.ritual.LevelRainFieldAccessor acc) {
                 globalRain = acc.nostalgia$getRainLevelField();
