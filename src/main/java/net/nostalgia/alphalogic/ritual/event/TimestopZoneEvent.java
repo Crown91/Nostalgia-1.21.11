@@ -1,12 +1,18 @@
 package net.nostalgia.alphalogic.ritual.event;
 
 public interface TimestopZoneEvent extends RitualEvent {
-    int radiusChunks();
-    long snapGameTime();
-    long snapClockTicks();
-    float snapRain();
-    float snapThunder();
+  int radiusChunks();
 
-    @Override
-    default Kind kind() { return Kind.TIMESTOP_ZONE; }
+  long snapGameTime();
+
+  long snapClockTicks();
+
+  float snapRain();
+
+  float snapThunder();
+
+  @Override
+  default RitualEvent.Kind kind() {
+    return RitualEvent.Kind.TIMESTOP_ZONE;
+  }
 }
