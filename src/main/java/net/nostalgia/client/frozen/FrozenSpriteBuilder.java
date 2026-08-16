@@ -10,32 +10,39 @@ import net.nostalgia.mixin.client.frozen.SpriteContentsAccessor;
 
 @Environment(EnvType.CLIENT)
 public final class FrozenSpriteBuilder {
+  private FrozenSpriteBuilder() {
+  }
 
-    private FrozenSpriteBuilder() {}
-
-    public static SpriteContents buildFrozenFromLive(SpriteContents live) {
-        if (live == null) return null;
-        if (!live.isAnimated()) return null;
-
-        int frameW = live.width();
-        int frameH = live.height();
-        if (frameW <= 0 || frameH <= 0) return null;
-
+  public static SpriteContents buildFrozenFromLive(SpriteContents live) {
+    if (live == null) {
+      return null;
+    } else if (!live.isAnimated()) {
+      return null;
+    } else {
+      int frameW = live.width();
+      int frameH = live.height();
+      if (frameW > 0 && frameH > 0) {
         NativeImage src;
         try {
-            src = ((SpriteContentsAccessor) (Object) live).nostalgia$getOriginalImage();
-        } catch (Throwable t) {
-            return null;
+          src = ((SpriteContentsAccessor)live).nostalgia$getOriginalImage();
+        } catch (Throwable var6) {
+          return null;
         }
-        if (src == null) return null;
-        if (src.getWidth() < frameW || src.getHeight() < frameH) return null;
 
-        NativeImage firstFrame = new NativeImage(frameW, frameH, false);
-        src.copyRect(firstFrame, 0, 0, 0, 0, frameW, frameH, false, false);
-
-        Identifier frozenId = FrozenSpriteRegistry.toFrozenId(live.name());
-        FrozenSpriteRegistry.registerMapping(live.name(), frozenId);
-
-        return new SpriteContents(frozenId, new FrameSize(frameW, frameH), firstFrame);
+        if (src == null) {
+          return null;
+        } else if (src.getWidth() >= frameW && src.getHeight() >= frameH) {
+          NativeImage firstFrame = new NativeImage(frameW, frameH, false);
+          src.copyRect(firstFrame, 0, 0, 0, 0, frameW, frameH, false, false);
+          Identifier frozenId = FrozenSpriteRegistry.toFrozenId(live.name());
+          FrozenSpriteRegistry.registerMapping(live.name(), frozenId);
+          return new SpriteContents(frozenId, new FrameSize(frameW, frameH), firstFrame);
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
     }
+  }
 }
