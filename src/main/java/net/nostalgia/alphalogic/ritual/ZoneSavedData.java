@@ -25,7 +25,7 @@ public class ZoneSavedData extends SavedData {
 
   public static SavedDataType<ZoneSavedData> type() {
     return new SavedDataType<>(
-      DATA_NAME,
+      "nostalgia_timestop_zone",
       () -> new ZoneSavedData(new ArrayList<>()),
       CODEC,
       DataFixTypes.SAVED_DATA_COMMAND_STORAGE
@@ -33,7 +33,7 @@ public class ZoneSavedData extends SavedData {
   }
 
   public static ZoneSavedData get(ServerLevel overworld) {
-    return overworld.getServer().getLevel(Level.OVERWORLD).getDataStorage().computeIfAbsent(type());
+    return (ZoneSavedData)overworld.getServer().getLevel(Level.OVERWORLD).getDataStorage().computeIfAbsent(type());
   }
 
   public void updateZones(List<ZoneSavedData.ZoneEntry> newZones) {
