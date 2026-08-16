@@ -112,7 +112,7 @@ public class HologramMiniRenderer {
     int btnW = 9;
     int btnH = 9;
     graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, -1879048192);
-    graphics.renderOutline(btnX, btnY, btnW, btnH, -1442788148);
+    this.outlineRect(graphics, btnX, btnY, btnW, btnH, -1442788148);
     switch (this.renderMode) {
       case DOT:
         for (int i = 0; i < 3; i++) {
@@ -133,6 +133,13 @@ public class HologramMiniRenderer {
         graphics.fill(btnX + 5, btnY + 4, btnX + 7, btnY + 6, -16742298);
         graphics.fill(btnX + 3, btnY + 6, btnX + 6, btnY + 7, -16751036);
     }
+  }
+
+  private void outlineRect(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+    graphics.fill(x, y, x + width, y + 1, color);
+    graphics.fill(x, y + height - 1, x + width, y + height, color);
+    graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+    graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
   }
 
   private void rebakeTexture() {
@@ -358,7 +365,7 @@ public class HologramMiniRenderer {
         int ringAlpha = (int)(200.0F * (1.0F - ring) * spawnAlpha);
         if (ringAlpha > 10) {
           int ringColor = ringAlpha << 24 | 65484;
-          graphics.renderOutline(mx - ringRadius, my - ringRadius, ringRadius * 2 + 1, ringRadius * 2 + 1, ringColor);
+          this.outlineRect(graphics, mx - ringRadius, my - ringRadius, ringRadius * 2 + 1, ringRadius * 2 + 1, ringColor);
         }
 
         int dotAlpha = (int)((200.0F + 55.0F * pulse) * spawnAlpha);
