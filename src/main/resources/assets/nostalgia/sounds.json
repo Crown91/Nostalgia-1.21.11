@@ -156,6 +156,11 @@
             "nostalgia:random/pop"
         ]
     },
+    "random.drr": {
+        "sounds": [
+            "nostalgia:random/drr"
+        ]
+    },
     "step.grass": {
         "sounds": [
             "nostalgia:step/grass1",
