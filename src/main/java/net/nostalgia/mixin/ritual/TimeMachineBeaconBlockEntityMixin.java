@@ -35,20 +35,32 @@ public abstract class TimeMachineBeaconBlockEntityMixin extends BlockEntity impl
     private int nostalgia$energy = 0;
 
     @Unique
+    private int nostalgia$wasBooted = 0;
+
+    @Unique
     private final ContainerData nostalgia$energyData = new ContainerData() {
         @Override
         public int get(int index) {
-            return TimeMachineBeaconBlockEntityMixin.this.nostalgia$energy;
+            if (index == 0) {
+                return TimeMachineBeaconBlockEntityMixin.this.nostalgia$energy;
+            } else if (index == 1) {
+                return TimeMachineBeaconBlockEntityMixin.this.nostalgia$wasBooted;
+            }
+            return 0;
         }
 
         @Override
         public void set(int index, int value) {
-            TimeMachineBeaconBlockEntityMixin.this.nostalgia$energy = value;
+            if (index == 0) {
+                TimeMachineBeaconBlockEntityMixin.this.nostalgia$energy = value;
+            } else if (index == 1) {
+                TimeMachineBeaconBlockEntityMixin.this.nostalgia$wasBooted = value;
+            }
         }
 
         @Override
         public int getCount() {
-            return 1;
+            return 2;
         }
     };
 
@@ -88,11 +100,13 @@ public abstract class TimeMachineBeaconBlockEntityMixin extends BlockEntity impl
     @Inject(method = "saveAdditional", at = @At("TAIL"))
     private void nostalgia$saveAdditional(ValueOutput output, CallbackInfo ci) {
         output.putInt("TimeMachineEnergy", this.nostalgia$energy);
+        output.putInt("TimeMachineWasBooted", this.nostalgia$wasBooted);
     }
 
     @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void nostalgia$loadAdditional(ValueInput input, CallbackInfo ci) {
         this.nostalgia$energy = input.getIntOr("TimeMachineEnergy", 0);
+        this.nostalgia$wasBooted = input.getIntOr("TimeMachineWasBooted", 0);
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
