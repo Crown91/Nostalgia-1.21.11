@@ -41,11 +41,14 @@ public abstract class AlphaSkyMixin {
     private static final Identifier ALPHA_MOON_LOCATION = Identifier.fromNamespaceAndPath("nostalgia", "textures/environment/alpha_moon.png");
 
     @Unique
-    private GpuBuffer alphaCelestialsBuffer;
+    private GpuBuffer alphaSunBuffer;
 
     @Unique
-    private GpuBuffer getAlphaCelestialsBuffer() {
-        if (this.alphaCelestialsBuffer == null) {
+    private GpuBuffer alphaMoonBuffer;
+
+    @Unique
+    private GpuBuffer getAlphaSunBuffer() {
+        if (this.alphaSunBuffer == null) {
             try (ByteBufferBuilder builder = ByteBufferBuilder.exactlySized(4 * DefaultVertexFormat.POSITION_TEX.getVertexSize())) {
                 BufferBuilder buf = new BufferBuilder(builder, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buf.addVertex(-1.0F, 0.0F, -1.0F).setUv(0.0F, 0.0F);
@@ -53,11 +56,28 @@ public abstract class AlphaSkyMixin {
                 buf.addVertex(1.0F, 0.0F, 1.0F).setUv(1.0F, 1.0F);
                 buf.addVertex(-1.0F, 0.0F, 1.0F).setUv(0.0F, 1.0F);
                 try (MeshData mesh = buf.buildOrThrow()) {
-                    this.alphaCelestialsBuffer = RenderSystem.getDevice().createBuffer(() -> "Alpha Celestials Buffer", 32, mesh.vertexBuffer());
+                    this.alphaSunBuffer = RenderSystem.getDevice().createBuffer(() -> "Alpha Sun Buffer", 32, mesh.vertexBuffer());
                 }
             }
         }
-        return this.alphaCelestialsBuffer;
+        return this.alphaSunBuffer;
+    }
+
+    @Unique
+    private GpuBuffer getAlphaMoonBuffer() {
+        if (this.alphaMoonBuffer == null) {
+            try (ByteBufferBuilder builder = ByteBufferBuilder.exactlySized(4 * DefaultVertexFormat.POSITION_TEX.getVertexSize())) {
+                BufferBuilder buf = new BufferBuilder(builder, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+                buf.addVertex(-1.0F, 0.0F, -1.0F).setUv(1.0F, 0.0F);
+                buf.addVertex(1.0F, 0.0F, -1.0F).setUv(0.0F, 0.0F);
+                buf.addVertex(1.0F, 0.0F, 1.0F).setUv(0.0F, 1.0F);
+                buf.addVertex(-1.0F, 0.0F, 1.0F).setUv(1.0F, 1.0F);
+                try (MeshData mesh = buf.buildOrThrow()) {
+                    this.alphaMoonBuffer = RenderSystem.getDevice().createBuffer(() -> "Alpha Moon Buffer", 32, mesh.vertexBuffer());
+                }
+            }
+        }
+        return this.alphaMoonBuffer;
     }
 
     @Unique
@@ -88,7 +108,7 @@ public abstract class AlphaSkyMixin {
                 cmd.setUniform("DynamicTransforms", transforms);
                 GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
                 cmd.bindTexture("Sampler0", texView, sampler);
-                cmd.setVertexBuffer(0, getAlphaCelestialsBuffer());
+                cmd.setVertexBuffer(0, getAlphaSunBuffer());
                 com.mojang.blaze3d.systems.RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
                 cmd.setIndexBuffer(quadIndices.getBuffer(6), quadIndices.type());
                 cmd.drawIndexed(0, 0, 6, 1);
@@ -119,7 +139,7 @@ public abstract class AlphaSkyMixin {
                 cmd.setUniform("DynamicTransforms", transforms);
                 GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
                 cmd.bindTexture("Sampler0", texView, sampler);
-                cmd.setVertexBuffer(0, getAlphaCelestialsBuffer());
+                cmd.setVertexBuffer(0, getAlphaMoonBuffer());
                 com.mojang.blaze3d.systems.RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
                 cmd.setIndexBuffer(quadIndices.getBuffer(6), quadIndices.type());
                 cmd.drawIndexed(0, 0, 6, 1);
