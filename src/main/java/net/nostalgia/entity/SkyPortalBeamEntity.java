@@ -1,48 +1,50 @@
 package net.nostalgia.entity;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.network.syncher.SynchedEntityData.Builder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.nostalgia.command.ModCommands;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.nostalgia.alphalogic.ritual.SkyPortalEventInstance;
+import net.nostalgia.alphalogic.ritual.SkyPortalManager;
 
 public class SkyPortalBeamEntity extends Entity {
+  public SkyPortalBeamEntity(EntityType<?> entityType, Level level) {
+    super(entityType, level);
+    this.setNoGravity(true);
+  }
 
-    public SkyPortalBeamEntity(EntityType<?> entityType, Level level) {
-        super(entityType, level);
-        this.setNoGravity(true);
-    }
+  protected void defineSynchedData(Builder builder) {
+  }
 
-    @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-    }
+  protected void readAdditionalSaveData(ValueInput input) {
+  }
 
-    @Override
-    protected void readAdditionalSaveData(ValueInput input) {
-    }
+  protected void addAdditionalSaveData(ValueOutput output) {
+  }
 
-    @Override
-    protected void addAdditionalSaveData(ValueOutput output) {
-    }
+  public void tick() {
+    super.tick();
+    if (!this.level().isClientSide()) {
+      boolean myPortalActive = false;
 
-    @Override
-    public void tick() {
-        super.tick();
-        if (!this.level().isClientSide()) {
-            if (!net.nostalgia.alphalogic.ritual.SkyPortalManager.isAnyActive()) {
-                this.discard();
-            }
+      for (SkyPortalEventInstance p : SkyPortalManager.allPortals()) {
+        if (p.center().distSqr(this.blockPosition()) <= 9.0) {
+          myPortalActive = true;
+          break;
         }
-    }
+      }
 
-    @Override
-    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, net.minecraft.world.damagesource.DamageSource damageSource, float damageAmount) {
-        return false;
+      if (!myPortalActive) {
+        this.discard();
+      }
     }
+  }
+
+  public boolean hurtServer(ServerLevel level, DamageSource damageSource, float damageAmount) {
+    return false;
+  }
 }
