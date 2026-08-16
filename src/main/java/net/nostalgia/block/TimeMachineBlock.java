@@ -9,36 +9,31 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.nostalgia.block.entity.ModBlockEntities;
 import net.nostalgia.block.entity.TimeMachineBlockEntity;
 import org.jspecify.annotations.Nullable;
 
 public class TimeMachineBlock extends BaseEntityBlock {
-    public static final MapCodec<TimeMachineBlock> CODEC = simpleCodec(TimeMachineBlock::new);
+  public static final MapCodec<TimeMachineBlock> CODEC = simpleCodec(TimeMachineBlock::new);
 
-    public TimeMachineBlock(Properties properties) {
-        super(properties);
-    }
+  public TimeMachineBlock(Properties properties) {
+    super(properties);
+  }
 
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
+  protected MapCodec<? extends BaseEntityBlock> codec() {
+    return CODEC;
+  }
 
-    @Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new TimeMachineBlockEntity(pos, state);
-    }
+  public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+    return new TimeMachineBlockEntity(pos, state);
+  }
 
-    @Override
-    protected RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
-    }
+  protected RenderShape getRenderShape(BlockState state) {
+    return RenderShape.MODEL;
+  }
 
-    @Override
-    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return createTickerHelper(type, ModBlockEntities.TIME_MACHINE_BE, TimeMachineBlockEntity::tick);
-    }
+  public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+    return createTickerHelper(type, ModBlockEntities.TIME_MACHINE_BE, TimeMachineBlockEntity::tick);
+  }
 }
-
